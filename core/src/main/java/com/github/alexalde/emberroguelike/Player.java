@@ -49,6 +49,21 @@ public class Player {
         // position = position + direction * speed * deltaTime
         position.x += direction.x * speed * deltaTime;
         position.y += direction.y * speed * deltaTime;
+
+        // 4. Bildschirmbegrenzung (Clamping)
+        // Grenzen für X (0 bis Bildschirmbreite minus Bildbreite)
+        if (position.x < 0) {
+            position.x = 0;
+        } else if (position.x > Gdx.graphics.getWidth() - texture.getWidth()) {
+            position.x = Gdx.graphics.getWidth() - texture.getWidth();
+        }
+
+        // Grenzen für Y (0 bis Bildschirmhöhe minus Bildhöhe)
+        if (position.y < 0) {
+            position.y = 0;
+        } else if (position.y > Gdx.graphics.getHeight() - texture.getHeight()) {
+            position.y = Gdx.graphics.getHeight() - texture.getHeight();
+        }
     }
 
     public void draw(SpriteBatch batch) {
