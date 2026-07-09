@@ -7,6 +7,7 @@ Grundbewegung (8-Richtungen, normalisiert, Screen-Clamping). **Bereits erledigt.
 
 ## ⬜ Quest 1: Der erste Schritt zur Seite (Dash)
 Dash mit fixer Distanz, Cooldown und Invincibility-Frames (siehe GDD 1.2).
+- Vorbereitend: Das aktuelle libGDX-Default-Logo wird durch eine einfache flache PNG-Platzhalter-Grafik für den Spieler ersetzt (siehe GDD 5) — kein echtes Sprite, aber ein echter Entity-Platzhalter statt des Engine-Logos.
 - Fertig wenn: Spieler kann dashen, ist während des Dashs kurz unverwundbar, Cooldown verhindert Spam.
 
 ## ⬜ Quest 2: Erste Klinge
@@ -29,19 +30,23 @@ Einfaches Gegner-KI-Grundgerüst (Verfolgen, Angreifen), Schadenssystem für den
 Mehrere handgebaute Räume, verbunden zu einem kleinen Level, Übergänge zwischen Räumen.
 - Fertig wenn: Spieler kann durch mind. 3-4 verbundene, handgebaute Räume laufen.
 
-## ⬜ Quest 7: Beute und Level-Ups
+## ⬜ Quest 7: Aus der Asche geschmiedet (eigener Art-Pass)
+Der Kern-Loop (Movement, Dash, Combat, Räume) steht — Zeit, alle bisherigen Platzhalter-Grafiken durch eigene Pixelart zu ersetzen (siehe GDD 5).
+- Fertig wenn: Spieler, Gegner, Waffen/Projektile und Tiles nutzen eigene Sprites statt Platzhalter-Grafiken.
+
+## ⬜ Quest 8: Beute und Level-Ups
 In-Run-Progression: Raum-Belohnungen und Level-Up-System (siehe GDD 3.1).
 - Fertig wenn: Spieler bekommt nach Raum-Clear Belohnungsauswahl, kann durch XP/Ressourcen aufsteigen.
 
-## ⬜ Quest 8: Der Hub
+## ⬜ Quest 9: Der Hub
 Meta-Progression zwischen Runs: permanente Währung + Hub-Menü für dauerhafte Upgrades, erste freischaltbare Inhalte (siehe GDD 3.2).
 - Fertig wenn: Währung überlebt einen Run-Neustart, mind. 1 dauerhaftes Upgrade ist kaufbar.
 
-## ⬜ Quest 9: Der erste Boss
+## ⬜ Quest 10: Der erste Boss
 Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen.
 - Fertig wenn: Boss besiegbar, hat mind. 2 unterscheidbare Angriffsmuster.
 
-## ⬜ Quest 10: Das Chaos ordnet sich (Prozedurale Generierung)
+## ⬜ Quest 11: Das Chaos ordnet sich (Prozedurale Generierung)
 Erste Version der prozeduralen Raumkombination, aufbauend auf dem Pool handgebauter Räume aus Quest 4–6 (Ansatz wird dann final entschieden, siehe GDD 4).
 - Fertig wenn: Ein Run besteht aus zufällig zusammengesetzten Räumen aus dem bestehenden Raum-Pool.
 

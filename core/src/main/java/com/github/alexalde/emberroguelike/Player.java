@@ -13,44 +13,85 @@ public class Player {
 
     private float speed;
     private Texture texture;
+    private enum PlayerState{
+        NORMAL,
+        DASHING
+    };
+    private PlayerState state;
+    private Vector2 dashDirection;
+    private float dashTimeRemaining;
+    private float dashCooldownRemaining;
+
+    private static final float DASH_DISTANCE = 150f;
+    private static final float DASH_DURATION = 0.15f;
+    private static final float DASH_COOLDOWN = 0.5f;
+    private static final float DASH_SPEED = DASH_DISTANCE / DASH_DURATION;
+
 
     public Player(float startX, float startY) {
         this.position = new Vector2(startX, startY);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
-        this.texture = new Texture("libgdx.png");
+        this.texture = new Texture("player_placeholder.png");
+        this.state = PlayerState.NORMAL;
     }
 
     public void update(float deltaTime) {
-        // Jeden Frame die Richtung zurücksetzen
-        direction.set(0, 0);
+        if (state == PlayerState.DASHING) {
+            // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
+            position.x += dashDirection.x * DASH_SPEED * deltaTime;
+            position.y += dashDirection.y * DASH_SPEED * deltaTime;
 
-        // 1. Richtung basierend auf Input bestimmen
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            direction.y += 1;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            direction.y -= 1;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            direction.x -= 1;
-        }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            direction.x += 1;
+            dashTimeRemaining -= deltaTime;
+            if (dashTimeRemaining <= 0) {
+                state = PlayerState.NORMAL;
+                dashCooldownRemaining = DASH_COOLDOWN;
+            }
+        } else {
+            // Jeden Frame die Richtung zurücksetzen
+            direction.set(0, 0);
+
+            // Richtung basierend auf Input bestimmen
+            if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                direction.y += 1;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+                direction.y -= 1;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                direction.x -= 1;
+            }
+            if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                direction.x += 1;
+            }
+
+            // Der magische Mathe-Schritt: Normalisieren!
+            // nor() macht die Länge des Vektors zu 1, wenn er nicht 0 ist (wichtig, sonst Crash durch Division durch 0)
+            if (direction.len() > 0) {
+                direction.nor();
+            }
+
+            // Bewegung auf die Position anrechnen
+            // position = position + direction * speed * deltaTime
+            position.x += direction.x * speed * deltaTime;
+            position.y += direction.y * speed * deltaTime;
+
+            // Cooldown läuft nur ab, während wir NICHT dashen
+            if (dashCooldownRemaining > 0) {
+                dashCooldownRemaining -= deltaTime;
+            }
+
+            // Dash auslösen: frisch gedrückt, kein Cooldown mehr, und wir bewegen uns überhaupt
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+                    && dashCooldownRemaining <= 0
+                    && direction.len() > 0) {
+                state = PlayerState.DASHING;
+                dashDirection = direction.cpy();
+                dashTimeRemaining = DASH_DURATION;
+            }
         }
 
-        // 2. Der magische Mathe-Schritt: Normalisieren!
-        // nor() macht die Länge des Vektors zu 1, wenn er nicht 0 ist (wichtig, sonst Crash durch Division durch 0)
-        if (direction.len() > 0) {
-            direction.nor();
-        }
-
-        // 3. Bewegung auf die Position anrechnen
-        // position = position + direction * speed * deltaTime
-        position.x += direction.x * speed * deltaTime;
-        position.y += direction.y * speed * deltaTime;
-
-        // 4. Bildschirmbegrenzung (Clamping)
+        // Bildschirmbegrenzung (Clamping)
         // Grenzen für X (0 bis Bildschirmbreite minus Bildbreite)
         if (position.x < 0) {
             position.x = 0;
