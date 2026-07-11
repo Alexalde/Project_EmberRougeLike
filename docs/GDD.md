@@ -45,7 +45,12 @@ Status: In Erarbeitung, wird Schritt für Schritt gemeinsam ausgebaut.
 - **Prototyp-Phase:** Erst handgebaute Räume/Level, keine Prozeduralität.
 - **Prozedurale Generierung (später):** Der konkrete Ansatz (z.B. zufällige Kombination handgebauter Raum-Vorlagen vs. algorithmisch generierter Rauminhalt) wird bewusst erst entschieden, wenn genug handgebaute Räume existieren, um eine informierte Wahl zu treffen. Raumbasierte Struktur wurde aber genau deshalb gewählt, weil sie sich gut für spätere prozedurale Kombination eignet.
 
-## 5. Scope-Abgrenzung & Non-Goals
+## 5. Grafik & Assets
+
+- **Platzhalter-Ansatz:** Solange es noch keine echten Sprites gibt, bekommt jeder Entity-Typ (Spieler, Gegner, Projektile, ...) eine eigene **flache PNG-Platzhalter-Grafik** (einfaches farbiges Quadrat/Kreis o.ä.) statt des aktuellen libGDX-Default-Logos. Vorteil: Das echte Sprite ersetzt später einfach die Datei am selben Asset-Pfad, ohne dass Code angefasst werden muss.
+- **Eigene Pixelart (dedizierter Art-Pass):** Kommt erst, **nachdem der Kern-Gameplay-Loop steht** (grob nach Quest 6 "Pfad durch mehrere Räume", siehe `ROADMAP.md`). Begründung: Vorher ändern sich Waffen-Movesets, Dash-Timing und Animationslängen noch häufig — fertige Sprites/Animationen davor zu bauen bedeutet oft doppelte Arbeit bei späteren Anpassungen.
+
+## 6. Scope-Abgrenzung & Non-Goals
 
 Explizit **nicht** Teil des frühen Scopes/MVP:
 
