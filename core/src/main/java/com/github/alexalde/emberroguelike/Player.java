@@ -40,7 +40,9 @@ public class Player {
         this.aimDirection = new Vector2(1, 0);
     }
 
-    public void update(float deltaTime) {
+    // "target" ist bewusst ein einzelner Dummy-Gegner für den Hitbox-Test (Quest 2) —
+    // sobald mehrere Gegner gleichzeitig existieren (Quest 4-6), wird das zu einer Liste
+    public void update(float deltaTime, Enemy target) {
         sword.update(deltaTime);
 
         if (state == PlayerState.DASHING) {
@@ -122,9 +124,12 @@ public class Player {
 
             Vector2 targetDirection = new Vector2(Gdx.input.getX() - centerX, mouseWorldY - centerY);
 
-            if (targetDirection.len() > 0 && sword.tryAttack()) {
-                aimDirection = targetDirection.nor();
-                sword.attack();
+            if (targetDirection.len() > 0) {
+                targetDirection.nor();
+                Vector2 attackOrigin = new Vector2(centerX, centerY);
+                if (sword.tryAttack(attackOrigin, targetDirection, target)) {
+                    aimDirection = targetDirection;
+                }
             }
         }
     }

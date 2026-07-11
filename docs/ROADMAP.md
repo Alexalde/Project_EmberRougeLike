@@ -11,9 +11,11 @@ Dash mit fixer Distanz, Cooldown und Invincibility-Frames (siehe GDD 1.2). **Ber
 - Fertig wenn: Spieler kann dashen, ist während des Dashs kurz unverwundbar, Cooldown verhindert Spam.
 - Backlog (nicht blockierend): visuelle Cooldown-Anzeige für den Dash — bewusst auf später verschoben.
 
-## ⬜ Quest 2: Erste Klinge
-Eine Nahkampfwaffe mit eigenem Angriffsmuster, Hitbox-Treffererkennung, ein Dummy-Gegner zum Testen.
+## ✅ Quest 2: Erste Klinge
+Eine Nahkampfwaffe mit eigenem Angriffsmuster, Hitbox-Treffererkennung, ein Dummy-Gegner zum Testen. **Bereits erledigt.**
 - Fertig wenn: Spieler kann angreifen, Treffer wird erkannt, Dummy-Gegner nimmt Schaden.
+- Umgesetzt: `Sword` per Komposition (`Player` hat-ein `Sword`), Maus-Aim mit Y-Flip-Korrektur, Distanz-basierte Hitbox/Hurtbox-Trennung gegen `Enemy`-Dummy.
+- Bewusst vereinfacht (siehe Roadmap-Kommentar in `Player.update()`): `Enemy` wird aktuell als einzelner Parameter durchgereicht, nicht als Liste — wird generalisiert, sobald Quest 4-6 mehrere Gegner gleichzeitig braucht.
 
 ## ⬜ Quest 3: Erster Pfeil
 Eine Fernkampfwaffe (Projektil-System), Wechsel zwischen Nah-/Fernkampf ist hier noch nicht nötig (nur 1 Waffenslot laut GDD) — stattdessen z.B. Testumgebung mit beiden Waffentypen separat.
