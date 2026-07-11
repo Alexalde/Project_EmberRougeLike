@@ -27,6 +27,8 @@ public class Player {
     private static final float DASH_COOLDOWN = 0.5f;
     private static final float DASH_SPEED = DASH_DISTANCE / DASH_DURATION;
 
+    private Sword sword;
+    private Vector2 aimDirection;
 
     public Player(float startX, float startY) {
         this.position = new Vector2(startX, startY);
@@ -34,9 +36,13 @@ public class Player {
         this.speed = 300f;
         this.texture = new Texture("player_placeholder.png");
         this.state = PlayerState.NORMAL;
+        this.sword = new Sword();
+        this.aimDirection = new Vector2(1, 0);
     }
 
     public void update(float deltaTime) {
+        sword.update(deltaTime);
+
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
             position.x += dashDirection.x * DASH_SPEED * deltaTime;
@@ -104,6 +110,22 @@ public class Player {
             position.y = 0;
         } else if (position.y > Gdx.graphics.getHeight() - texture.getHeight()) {
             position.y = Gdx.graphics.getHeight() - texture.getHeight();
+        }
+
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            // Spielermitte statt linker unterer Ecke als Ursprung für die Zielrichtung
+            float centerX = position.x + texture.getWidth() / 2f;
+            float centerY = position.y + texture.getHeight() / 2f;
+
+            // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
+            float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
+
+            Vector2 targetDirection = new Vector2(Gdx.input.getX() - centerX, mouseWorldY - centerY);
+
+            if (targetDirection.len() > 0 && sword.tryAttack()) {
+                aimDirection = targetDirection.nor();
+                sword.attack();
+            }
         }
     }
 
