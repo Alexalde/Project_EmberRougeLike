@@ -5,10 +5,11 @@ Meilensteine für EmberRougeLike, abgeleitet aus `docs/GDD.md`. Jede Quest ist e
 ## ✅ Quest 0: Erwachen
 Grundbewegung (8-Richtungen, normalisiert, Screen-Clamping). **Bereits erledigt.**
 
-## ⬜ Quest 1: Der erste Schritt zur Seite (Dash)
-Dash mit fixer Distanz, Cooldown und Invincibility-Frames (siehe GDD 1.2).
+## ✅ Quest 1: Der erste Schritt zur Seite (Dash)
+Dash mit fixer Distanz, Cooldown und Invincibility-Frames (siehe GDD 1.2). **Bereits erledigt** — fühlt sich laut Playtest gut an.
 - Vorbereitend: Das aktuelle libGDX-Default-Logo wird durch eine einfache flache PNG-Platzhalter-Grafik für den Spieler ersetzt (siehe GDD 5) — kein echtes Sprite, aber ein echter Entity-Platzhalter statt des Engine-Logos.
 - Fertig wenn: Spieler kann dashen, ist während des Dashs kurz unverwundbar, Cooldown verhindert Spam.
+- Backlog (nicht blockierend): visuelle Cooldown-Anzeige für den Dash — bewusst auf später verschoben.
 
 ## ⬜ Quest 2: Erste Klinge
 Eine Nahkampfwaffe mit eigenem Angriffsmuster, Hitbox-Treffererkennung, ein Dummy-Gegner zum Testen.

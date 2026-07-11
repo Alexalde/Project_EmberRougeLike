@@ -65,7 +65,7 @@ public class Player {
                 direction.x += 1;
             }
 
-            // Der magische Mathe-Schritt: Normalisieren!
+            // Normalisieren
             // nor() macht die Länge des Vektors zu 1, wenn er nicht 0 ist (wichtig, sonst Crash durch Division durch 0)
             if (direction.len() > 0) {
                 direction.nor();
@@ -105,6 +105,11 @@ public class Player {
         } else if (position.y > Gdx.graphics.getHeight() - texture.getHeight()) {
             position.y = Gdx.graphics.getHeight() - texture.getHeight();
         }
+    }
+
+    // Wird später vom Schadenssystem abgefragt, bevor Schaden angewendet wird (siehe Quest 5)
+    public boolean isInvincible() {
+        return state == PlayerState.DASHING;
     }
 
     public void draw(SpriteBatch batch) {
