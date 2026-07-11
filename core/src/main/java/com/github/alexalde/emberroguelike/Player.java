@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2; // Neu importiert!
 
 public class Player {
@@ -114,20 +115,22 @@ public class Player {
             position.y = Gdx.graphics.getHeight() - texture.getHeight();
         }
 
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            // Spielermitte statt linker unterer Ecke als Ursprung für die Zielrichtung
-            float centerX = position.x + texture.getWidth() / 2f;
-            float centerY = position.y + texture.getHeight() / 2f;
+        // Bei autoSwing zählt gehalten, sonst nur der einzelne Klick-Moment
+        boolean attackInputActive = GameSettings.autoSwing
+                ? Gdx.input.isButtonPressed(Input.Buttons.LEFT)
+                : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+
+        if (attackInputActive) {
+            Vector2 center = getCenter();
 
             // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
             float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
 
-            Vector2 targetDirection = new Vector2(Gdx.input.getX() - centerX, mouseWorldY - centerY);
+            Vector2 targetDirection = new Vector2(Gdx.input.getX() - center.x, mouseWorldY - center.y);
 
             if (targetDirection.len() > 0) {
                 targetDirection.nor();
-                Vector2 attackOrigin = new Vector2(centerX, centerY);
-                if (sword.tryAttack(attackOrigin, targetDirection, target)) {
+                if (sword.tryAttack(center, targetDirection, target)) {
                     aimDirection = targetDirection;
                 }
             }
@@ -139,9 +142,17 @@ public class Player {
         return state == PlayerState.DASHING;
     }
 
+    private Vector2 getCenter() {
+        return new Vector2(position.x + texture.getWidth() / 2f, position.y + texture.getHeight() / 2f);
+    }
+
     public void draw(SpriteBatch batch) {
         // Da position nun ein Vector2 ist, nutzen wir position.x und position.y
         batch.draw(texture, position.x, position.y);
+    }
+
+    public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
+        sword.drawHitboxDebug(shapeRenderer, getCenter());
     }
 
     public void dispose() {
