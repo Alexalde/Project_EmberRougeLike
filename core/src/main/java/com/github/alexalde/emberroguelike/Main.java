@@ -6,10 +6,12 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
+    private ShapeRenderer shapeRenderer;
     private Player player; // Hier ist unser Spieler-Objekt!
     private Enemy enemy;
 
@@ -19,6 +21,7 @@ public class Main extends ApplicationAdapter {
     @Override
     public void create() {
         batch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
         // Wir instanziieren unseren Spieler bei X:200, Y:200
         player = new Player(200, 200);
 
@@ -56,11 +59,19 @@ public class Main extends ApplicationAdapter {
         );
 
         batch.end();
+
+        // Debug: exakte Hitbox-Form, umschaltbar über DebugSettings.renderHitboxes
+        if (DebugSettings.renderHitboxes) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            player.drawHitboxDebug(shapeRenderer);
+            shapeRenderer.end();
+        }
     }
 
     @Override
     public void dispose() {
         batch.dispose();
+        shapeRenderer.dispose();
         player.dispose(); // Auch der Spieler muss seinen Speicher aufräumen
         enemy.dispose();
         mouseDebugTexture.dispose();

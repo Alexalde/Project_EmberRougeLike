@@ -27,8 +27,21 @@ public class Enemy {
         return health > 0;
     }
 
-    public boolean isHitBy(Vector2 point) {
-        return position.dst(point) <= HURTBOX_RADIUS;
+    // Reichweiten- und Kegel-Check: Ist dieser Gegner innerhalb "range" und ungefähr in "direction"?
+    public boolean isHitByArc(Vector2 origin, Vector2 direction, float range, float halfAngleDegrees) {
+        Vector2 toThis = position.cpy().sub(origin);
+        float distance = toThis.len();
+
+        if (distance > range + HURTBOX_RADIUS) {
+            return false;
+        }
+        if (distance == 0) {
+            return true;
+        }
+
+        toThis.nor();
+        float minDot = (float) Math.cos(Math.toRadians(halfAngleDegrees));
+        return direction.dot(toThis) >= minDot;
     }
 
     public void draw(SpriteBatch batch) {
