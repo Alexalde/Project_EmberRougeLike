@@ -17,9 +17,11 @@ Eine Nahkampfwaffe mit eigenem Angriffsmuster, Hitbox-Treffererkennung, ein Dumm
 - Umgesetzt: `Sword` per Komposition (`Player` hat-ein `Sword`), Maus-Aim mit Y-Flip-Korrektur, Distanz-basierte Hitbox/Hurtbox-Trennung gegen `Enemy`-Dummy.
 - Bewusst vereinfacht (siehe Roadmap-Kommentar in `Player.update()`): `Enemy` wird aktuell als einzelner Parameter durchgereicht, nicht als Liste — wird generalisiert, sobald Quest 4-6 mehrere Gegner gleichzeitig braucht.
 
-## ⬜ Quest 3: Erster Pfeil
-Eine Fernkampfwaffe (Projektil-System), Wechsel zwischen Nah-/Fernkampf ist hier noch nicht nötig (nur 1 Waffenslot laut GDD) — stattdessen z.B. Testumgebung mit beiden Waffentypen separat.
+## ✅ Quest 3: Erster Pfeil
+Eine Fernkampfwaffe (Projektil-System), Wechsel zwischen Nah-/Fernkampf ist hier noch nicht nötig (nur 1 Waffenslot laut GDD) — stattdessen Testumgebung mit beiden Waffentypen gleichzeitig (Schwert links, Bogen rechts). **Bereits erledigt.**
 - Fertig wenn: Projektil kann abgefeuert werden, trifft Gegner, wird sauber entsorgt (Objektlebenszyklus!).
+- Umgesetzt: `Projectile` als eigenständige, sich über Zeit bewegende Entity (Position, Richtung, Geschwindigkeit, Lebensdauer/Reichweite, `hitsRemaining` als Vorbereitung für spätere Piercing-Effekte). `Bow` verwaltet eine `List<Projectile>` (sicheres Entfernen via `removeIf`), teilt sich eine einzige Textur statt pro Pfeil neu zu laden.
+- `Weapon`-Interface aus `Sword` und `Bow` extrahiert (`update(deltaTime, target)`, `tryAttack(origin, direction, target)`) — bewusst nur die Methoden, die wirklich polymorph gleich genutzt werden; Zeichnen bleibt getrennt, da Sword nur Debug-Hitbox zeigt, Bow aber echte Pfeil-Sprites.
 
 ## ⬜ Quest 4: Der erste Raum
 Ein einzelner, in Tiled gebauter Raum mit Gegnern, Tür-Lock bis alle Gegner besiegt sind (siehe GDD 4).

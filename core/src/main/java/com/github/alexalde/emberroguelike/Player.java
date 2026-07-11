@@ -29,6 +29,9 @@ public class Player {
     private static final float DASH_SPEED = DASH_DISTANCE / DASH_DURATION;
 
     private Sword sword;
+    // Bow testweise auf der rechten Maustaste - echtes Waffen-Slot-System (Wechsel zwischen
+    // Waffen) kommt erst später, siehe GDD 2 / ROADMAP Quest 3
+    private Bow bow;
     private Vector2 aimDirection;
 
     public Player(float startX, float startY) {
@@ -38,13 +41,15 @@ public class Player {
         this.texture = new Texture("player_placeholder.png");
         this.state = PlayerState.NORMAL;
         this.sword = new Sword();
+        this.bow = new Bow();
         this.aimDirection = new Vector2(1, 0);
     }
 
     // "target" ist bewusst ein einzelner Dummy-Gegner für den Hitbox-Test (Quest 2) —
     // sobald mehrere Gegner gleichzeitig existieren (Quest 4-6), wird das zu einer Liste
     public void update(float deltaTime, Enemy target) {
-        sword.update(deltaTime);
+        sword.update(deltaTime, target);
+        bow.update(deltaTime, target);
 
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
@@ -115,24 +120,29 @@ public class Player {
             position.y = Gdx.graphics.getHeight() - texture.getHeight();
         }
 
-        // Bei autoSwing zählt gehalten, sonst nur der einzelne Klick-Moment
-        boolean attackInputActive = GameSettings.autoSwing
-                ? Gdx.input.isButtonPressed(Input.Buttons.LEFT)
-                : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+        Vector2 center = getCenter();
 
-        if (attackInputActive) {
-            Vector2 center = getCenter();
+        // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
+        float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
 
-            // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
-            float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
+        Vector2 targetDirection = new Vector2(Gdx.input.getX() - center.x, mouseWorldY - center.y);
 
-            Vector2 targetDirection = new Vector2(Gdx.input.getX() - center.x, mouseWorldY - center.y);
+        if (targetDirection.len() > 0) {
+            targetDirection.nor();
 
-            if (targetDirection.len() > 0) {
-                targetDirection.nor();
-                if (sword.tryAttack(center, targetDirection, target)) {
-                    aimDirection = targetDirection;
-                }
+            // Bei autoSwing zählt gehalten, sonst nur der einzelne Klick-Moment
+            boolean meleeInputActive = GameSettings.autoSwing
+                    ? Gdx.input.isButtonPressed(Input.Buttons.LEFT)
+                    : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+            if (meleeInputActive && sword.tryAttack(center, targetDirection, target)) {
+                aimDirection = targetDirection;
+            }
+
+            boolean rangedInputActive = GameSettings.autoSwing
+                    ? Gdx.input.isButtonPressed(Input.Buttons.RIGHT)
+                    : Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT);
+            if (rangedInputActive && bow.tryAttack(center, targetDirection, target)) {
+                aimDirection = targetDirection;
             }
         }
     }
@@ -149,6 +159,7 @@ public class Player {
     public void draw(SpriteBatch batch) {
         // Da position nun ein Vector2 ist, nutzen wir position.x und position.y
         batch.draw(texture, position.x, position.y);
+        bow.draw(batch);
     }
 
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
@@ -157,5 +168,6 @@ public class Player {
 
     public void dispose() {
         texture.dispose();
+        bow.dispose();
     }
 }

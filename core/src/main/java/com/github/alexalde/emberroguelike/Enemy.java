@@ -44,6 +44,11 @@ public class Enemy {
         return direction.dot(toThis) >= minDot;
     }
 
+    // Einfacher Punkt-Treffer-Check, passend für sich bewegende Objekte wie Projectile
+    public boolean isHitBy(Vector2 point) {
+        return position.dst(point) <= HURTBOX_RADIUS;
+    }
+
     public void draw(SpriteBatch batch) {
         batch.draw(texture, position.x, position.y);
     }

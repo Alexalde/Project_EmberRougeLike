@@ -4,7 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 
-public class Sword {
+public class Sword implements Weapon {
 
     private float attackCooldownDuration;
     private float attackCooldownRemaining;
@@ -30,7 +30,9 @@ public class Sword {
         this.lastAttackDirection = new Vector2(1, 0);
     }
 
-    public void update(float deltaTime) {
+    // "target" wird hier nicht gebraucht - Signatur folgt dem Weapon-Interface, das Bow braucht ihn
+    @Override
+    public void update(float deltaTime, Enemy target) {
         // Cooldown läuft ab
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime;
@@ -51,6 +53,7 @@ public class Sword {
         }
     }
 
+    @Override
     public boolean tryAttack(Vector2 origin, Vector2 direction, Enemy target) {
         if (attackCooldownRemaining <= 0){
             attackCooldownRemaining = attackCooldownDuration;
