@@ -38,6 +38,7 @@ Der Kern-Loop (Movement, Dash, Combat, Räume) steht — Zeit, alle bisherigen P
 ## ⬜ Quest 8: Beute und Level-Ups
 In-Run-Progression: Raum-Belohnungen und Level-Up-System (siehe GDD 3.1).
 - Fertig wenn: Spieler bekommt nach Raum-Clear Belohnungsauswahl, kann durch XP/Ressourcen aufsteigen.
+- Technischer Vorlauf: Stat-Konstanten (z.B. `DASH_DISTANCE`, `DASH_SPEED`, später Waffen-Werte) müssen von `static final` Klassenkonstanten zu veränderlichen Instanzfeldern werden, damit Items sie zur Laufzeit modifizieren können (`final` verbietet jede spätere Neuzuweisung).
 
 ## ⬜ Quest 9: Der Hub
 Meta-Progression zwischen Runs: permanente Währung + Hub-Menü für dauerhafte Upgrades, erste freischaltbare Inhalte (siehe GDD 3.2).
