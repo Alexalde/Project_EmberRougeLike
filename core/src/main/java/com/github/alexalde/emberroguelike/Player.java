@@ -1,7 +1,6 @@
 package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -29,6 +28,9 @@ public class Player {
     private static final float DASH_SPEED = DASH_DISTANCE / DASH_DURATION;
 
     private Sword sword;
+    // Bow testweise auf der rechten Maustaste - echtes Waffen-Slot-System (Wechsel zwischen
+    // Waffen) kommt erst später, siehe GDD 2 / ROADMAP Quest 3
+    private Bow bow;
     private Vector2 aimDirection;
 
     public Player(float startX, float startY) {
@@ -38,13 +40,15 @@ public class Player {
         this.texture = new Texture("player_placeholder.png");
         this.state = PlayerState.NORMAL;
         this.sword = new Sword();
+        this.bow = new Bow();
         this.aimDirection = new Vector2(1, 0);
     }
 
     // "target" ist bewusst ein einzelner Dummy-Gegner für den Hitbox-Test (Quest 2) —
     // sobald mehrere Gegner gleichzeitig existieren (Quest 4-6), wird das zu einer Liste
     public void update(float deltaTime, Enemy target) {
-        sword.update(deltaTime);
+        sword.update(deltaTime, target);
+        bow.update(deltaTime, target);
 
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
@@ -61,16 +65,16 @@ public class Player {
             direction.set(0, 0);
 
             // Richtung basierend auf Input bestimmen
-            if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveUpKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveUpKeySecondary)) {
                 direction.y += 1;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveDownKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveDownKeySecondary)) {
                 direction.y -= 1;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveLeftKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveLeftKeySecondary)) {
                 direction.x -= 1;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveRightKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveRightKeySecondary)) {
                 direction.x += 1;
             }
 
@@ -91,7 +95,7 @@ public class Player {
             }
 
             // Dash auslösen: frisch gedrückt, kein Cooldown mehr, und wir bewegen uns überhaupt
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+            if (Gdx.input.isKeyJustPressed(GameSettings.dashKey)
                     && dashCooldownRemaining <= 0
                     && direction.len() > 0) {
                 state = PlayerState.DASHING;
@@ -115,24 +119,29 @@ public class Player {
             position.y = Gdx.graphics.getHeight() - texture.getHeight();
         }
 
-        // Bei autoSwing zählt gehalten, sonst nur der einzelne Klick-Moment
-        boolean attackInputActive = GameSettings.autoSwing
-                ? Gdx.input.isButtonPressed(Input.Buttons.LEFT)
-                : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+        Vector2 center = getCenter();
 
-        if (attackInputActive) {
-            Vector2 center = getCenter();
+        // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
+        float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
 
-            // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
-            float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
+        Vector2 targetDirection = new Vector2(Gdx.input.getX() - center.x, mouseWorldY - center.y);
 
-            Vector2 targetDirection = new Vector2(Gdx.input.getX() - center.x, mouseWorldY - center.y);
+        if (targetDirection.len() > 0) {
+            targetDirection.nor();
 
-            if (targetDirection.len() > 0) {
-                targetDirection.nor();
-                if (sword.tryAttack(center, targetDirection, target)) {
-                    aimDirection = targetDirection;
-                }
+            // Bei autoSwing zählt gehalten, sonst nur der einzelne Klick-Moment
+            boolean meleeInputActive = GameSettings.autoSwing
+                    ? Gdx.input.isButtonPressed(GameSettings.meleeAttackButton)
+                    : Gdx.input.isButtonJustPressed(GameSettings.meleeAttackButton);
+            if (meleeInputActive && sword.tryAttack(center, targetDirection, target)) {
+                aimDirection = targetDirection;
+            }
+
+            boolean rangedInputActive = GameSettings.autoSwing
+                    ? Gdx.input.isButtonPressed(GameSettings.rangedAttackButton)
+                    : Gdx.input.isButtonJustPressed(GameSettings.rangedAttackButton);
+            if (rangedInputActive && bow.tryAttack(center, targetDirection, target)) {
+                aimDirection = targetDirection;
             }
         }
     }
@@ -149,13 +158,16 @@ public class Player {
     public void draw(SpriteBatch batch) {
         // Da position nun ein Vector2 ist, nutzen wir position.x und position.y
         batch.draw(texture, position.x, position.y);
+        bow.draw(batch);
     }
 
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
         sword.drawHitboxDebug(shapeRenderer, getCenter());
+        bow.drawHitboxDebug(shapeRenderer);
     }
 
     public void dispose() {
         texture.dispose();
+        bow.dispose();
     }
 }

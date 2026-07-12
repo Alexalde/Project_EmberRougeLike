@@ -64,6 +64,7 @@ public class Main extends ApplicationAdapter {
         if (DebugSettings.renderHitboxes) {
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             player.drawHitboxDebug(shapeRenderer);
+            enemy.drawHitboxDebug(shapeRenderer);
             shapeRenderer.end();
         }
     }
