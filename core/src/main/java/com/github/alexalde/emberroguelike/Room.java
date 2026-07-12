@@ -16,42 +16,36 @@ public class Room {
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
     private List<Vector2> enemySpawnPoints;
-    private Vector2 doorPosition;
+    private Door door;
 
     public Room(String tmxPath) {
         this.map = new TmxMapLoader().load(tmxPath);
         this.renderer = new OrthogonalTiledMapRenderer(map);
         this.enemySpawnPoints = new ArrayList<>();
 
-        int mapPixelHeight = map.getProperties().get("height", Integer.class)
-            * map.getProperties().get("tileheight", Integer.class);
-
+        // libGDX' TmxMapLoader flippt Objekt-Y-Koordinaten beim Laden bereits selbst (anders als
+        // bei der Maus, wo WIR das manuell tun müssen) - "x"/"y" hier sind schon in unserem
+        // Y-nach-oben-Weltkoordinatensystem, kein zusätzlicher Flip nötig
         MapObjects objects = map.getLayers().get("Objects").getObjects();
         for (MapObject object : objects) {
             String type = object.getProperties().get("type", String.class);
-            float tiledX = object.getProperties().get("x", Float.class);
-            float tiledY = object.getProperties().get("y", Float.class);
-
-            // Tiled zählt Y von oben nach unten, unsere Welt von unten nach oben (Y-Flip, wie bei der Maus)
-            float gameY = mapPixelHeight - tiledY;
+            float x = object.getProperties().get("x", Float.class);
+            float y = object.getProperties().get("y", Float.class);
 
             if ("EnemySpawn".equals(type)) {
-                enemySpawnPoints.add(new Vector2(tiledX, gameY));
+                enemySpawnPoints.add(new Vector2(x, y));
             } else if ("Door".equals(type)) {
-                doorPosition = new Vector2(tiledX, gameY);
+                door = new Door(new Vector2(x, y));
             }
         }
-
-        // TODO: Debug-Print entfernen, sobald die Gegner-Liste (Task 16) sichtbar auf dem Schirm steht
-        System.out.println("Room geladen: " + enemySpawnPoints.size() + " Enemy-Spawns, Door bei " + doorPosition);
     }
 
     public List<Vector2> getEnemySpawnPoints() {
         return enemySpawnPoints;
     }
 
-    public Vector2 getDoorPosition() {
-        return doorPosition;
+    public Door getDoor() {
+        return door;
     }
 
     public void render(OrthographicCamera camera) {
@@ -61,6 +55,7 @@ public class Room {
 
     public void dispose() {
         map.dispose();
+        door.dispose();
     }
 
 }

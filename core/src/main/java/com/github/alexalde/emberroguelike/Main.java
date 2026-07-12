@@ -106,6 +106,9 @@ public class Main extends ApplicationAdapter {
         }
         enemies.removeIf(enemy -> !enemy.isAlive());
 
+        // Tür bleibt verriegelt, solange noch Gegner übrig sind
+        room.getDoor().setLocked(!enemies.isEmpty());
+
         // 2. Bildschirm leeren
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
 
@@ -119,6 +122,7 @@ public class Main extends ApplicationAdapter {
         // später bewegt (siehe Diskussion zu größeren, scrollenden Räumen)
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        room.getDoor().draw(batch);
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
         for (Enemy enemy : enemies) {
             enemy.draw(batch);
