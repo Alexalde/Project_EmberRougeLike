@@ -12,6 +12,9 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -22,7 +25,7 @@ public class Main extends ApplicationAdapter {
 
     private Room room;
     private Player player; // Hier ist unser Spieler-Objekt!
-    private Enemy enemy;
+    private List<Enemy> enemies;
 
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
@@ -45,7 +48,10 @@ public class Main extends ApplicationAdapter {
         // Wir instanziieren unseren Spieler bei X:200, Y:200
         player = new Player(200, 200);
 
-        enemy = new Enemy(400, 150);
+        enemies = new ArrayList<>();
+        for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
+            enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
+        }
 
         Pixmap pixmap = new Pixmap(8, 8, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.RED);
@@ -88,7 +94,17 @@ public class Main extends ApplicationAdapter {
         Vector2 mouseWorldPosition = new Vector2(mouseScreenCoords.x, mouseScreenCoords.y);
 
         // 1. Logik updaten
-        player.update(deltaTime, enemy, mouseWorldPosition);
+        player.update(deltaTime, enemies, mouseWorldPosition);
+
+        // Tote Gegner entfernen: erst Texturen aufräumen (sonst Speicherleck), dann erst aus
+        // der Liste löschen (siehe ConcurrentModificationException-Thema von neulich - deshalb
+        // zwei getrennte Schritte statt Aufräumen mitten in der removeIf-Bedingung)
+        for (Enemy enemy : enemies) {
+            if (!enemy.isAlive()) {
+                enemy.dispose();
+            }
+        }
+        enemies.removeIf(enemy -> !enemy.isAlive());
 
         // 2. Bildschirm leeren
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
@@ -104,7 +120,9 @@ public class Main extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
-        enemy.draw(batch);
+        for (Enemy enemy : enemies) {
+            enemy.draw(batch);
+        }
 
         // Debug: rotes Quadrat an der (bereits umgerechneten) Mausposition, zur Kontrolle der Aim-Berechnung
         batch.draw(
@@ -122,7 +140,9 @@ public class Main extends ApplicationAdapter {
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             player.drawHitboxDebug(shapeRenderer);
-            enemy.drawHitboxDebug(shapeRenderer);
+            for (Enemy enemy : enemies) {
+                enemy.drawHitboxDebug(shapeRenderer);
+            }
             shapeRenderer.end();
         }
     }
@@ -133,7 +153,9 @@ public class Main extends ApplicationAdapter {
         shapeRenderer.dispose();
         room.dispose();
         player.dispose(); // Auch der Spieler muss seinen Speicher aufräumen
-        enemy.dispose();
+        for (Enemy enemy : enemies) {
+            enemy.dispose();
+        }
         mouseDebugTexture.dispose();
     }
 }

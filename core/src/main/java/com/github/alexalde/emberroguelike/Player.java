@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2; // Neu importiert!
 
+import java.util.List;
+
 public class Player {
     // Wir ersetzen die losen floats für x und y durch LibGDX Vektoren
     private Vector2 position;
@@ -44,12 +46,10 @@ public class Player {
         this.aimDirection = new Vector2(1, 0);
     }
 
-    // "target" ist bewusst ein einzelner Dummy-Gegner für den Hitbox-Test (Quest 2) —
-    // sobald mehrere Gegner gleichzeitig existieren (Quest 4-6), wird das zu einer Liste.
     // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject)
-    public void update(float deltaTime, Enemy target, Vector2 mouseWorldPosition) {
-        sword.update(deltaTime, target);
-        bow.update(deltaTime, target);
+    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition) {
+        sword.update(deltaTime, targets);
+        bow.update(deltaTime, targets);
 
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
@@ -131,14 +131,14 @@ public class Player {
             boolean meleeInputActive = GameSettings.autoSwing
                     ? Gdx.input.isButtonPressed(GameSettings.meleeAttackButton)
                     : Gdx.input.isButtonJustPressed(GameSettings.meleeAttackButton);
-            if (meleeInputActive && sword.tryAttack(center, targetDirection, target)) {
+            if (meleeInputActive && sword.tryAttack(center, targetDirection, targets)) {
                 aimDirection = targetDirection;
             }
 
             boolean rangedInputActive = GameSettings.autoSwing
                     ? Gdx.input.isButtonPressed(GameSettings.rangedAttackButton)
                     : Gdx.input.isButtonJustPressed(GameSettings.rangedAttackButton);
-            if (rangedInputActive && bow.tryAttack(center, targetDirection, target)) {
+            if (rangedInputActive && bow.tryAttack(center, targetDirection, targets)) {
                 aimDirection = targetDirection;
             }
         }

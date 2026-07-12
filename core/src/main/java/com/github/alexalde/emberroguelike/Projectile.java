@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 
+import java.util.List;
+
 public class Projectile {
 
     private Vector2 position;
@@ -36,15 +38,20 @@ public class Projectile {
         this.texture = texture;
     }
 
-    public void update(float deltaTime, Enemy target) {
+    public void update(float deltaTime, List<Enemy> targets) {
         float step = speed * deltaTime;
         position.x += direction.x * step;
         position.y += direction.y * step;
         distanceTraveled += step;
 
-        if (hitsRemaining > 0 && target.isHitBy(position, hitboxRadius)) {
-            target.takeDamage((int) damage);
-            hitsRemaining--;
+        for (Enemy target : targets) {
+            if (hitsRemaining <= 0) {
+                break;
+            }
+            if (target.isAlive() && target.isHitBy(position, hitboxRadius)) {
+                target.takeDamage((int) damage);
+                hitsRemaining--;
+            }
         }
     }
 
