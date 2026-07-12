@@ -1,7 +1,6 @@
 package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -66,16 +65,16 @@ public class Player {
             direction.set(0, 0);
 
             // Richtung basierend auf Input bestimmen
-            if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveUpKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveUpKeySecondary)) {
                 direction.y += 1;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveDownKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveDownKeySecondary)) {
                 direction.y -= 1;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveLeftKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveLeftKeySecondary)) {
                 direction.x -= 1;
             }
-            if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            if (Gdx.input.isKeyPressed(GameSettings.moveRightKeyPrimary) || Gdx.input.isKeyPressed(GameSettings.moveRightKeySecondary)) {
                 direction.x += 1;
             }
 
@@ -96,7 +95,7 @@ public class Player {
             }
 
             // Dash auslösen: frisch gedrückt, kein Cooldown mehr, und wir bewegen uns überhaupt
-            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+            if (Gdx.input.isKeyJustPressed(GameSettings.dashKey)
                     && dashCooldownRemaining <= 0
                     && direction.len() > 0) {
                 state = PlayerState.DASHING;
@@ -132,15 +131,15 @@ public class Player {
 
             // Bei autoSwing zählt gehalten, sonst nur der einzelne Klick-Moment
             boolean meleeInputActive = GameSettings.autoSwing
-                    ? Gdx.input.isButtonPressed(Input.Buttons.LEFT)
-                    : Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+                    ? Gdx.input.isButtonPressed(GameSettings.meleeAttackButton)
+                    : Gdx.input.isButtonJustPressed(GameSettings.meleeAttackButton);
             if (meleeInputActive && sword.tryAttack(center, targetDirection, target)) {
                 aimDirection = targetDirection;
             }
 
             boolean rangedInputActive = GameSettings.autoSwing
-                    ? Gdx.input.isButtonPressed(Input.Buttons.RIGHT)
-                    : Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT);
+                    ? Gdx.input.isButtonPressed(GameSettings.rangedAttackButton)
+                    : Gdx.input.isButtonJustPressed(GameSettings.rangedAttackButton);
             if (rangedInputActive && bow.tryAttack(center, targetDirection, target)) {
                 aimDirection = targetDirection;
             }
@@ -164,6 +163,7 @@ public class Player {
 
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
         sword.drawHitboxDebug(shapeRenderer, getCenter());
+        bow.drawHitboxDebug(shapeRenderer);
     }
 
     public void dispose() {

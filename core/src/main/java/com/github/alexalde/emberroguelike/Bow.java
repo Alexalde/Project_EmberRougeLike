@@ -2,6 +2,7 @@ package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ public class Bow implements Weapon {
     private float projectileSpeed;
     private float maxRange;
     private int hitsPerProjectile;
+    private float projectileHitboxRadius;
 
     private Texture projectileTexture;
     private List<Projectile> activeProjectiles;
@@ -28,6 +30,8 @@ public class Bow implements Weapon {
         this.hitsPerProjectile = 1;
 
         this.projectileTexture = new Texture("arrow_placeholder.png");
+        // An die Breite der Platzhalter-Textur gekoppelt, damit die Hitbox zur Grafik passt
+        this.projectileHitboxRadius = projectileTexture.getWidth() / 2f;
         this.activeProjectiles = new ArrayList<>();
     }
 
@@ -45,7 +49,7 @@ public class Bow implements Weapon {
 
     private void fire(Vector2 origin, Vector2 direction) {
         activeProjectiles.add(
-            new Projectile(origin, direction, projectileSpeed, damage, maxRange, hitsPerProjectile, projectileTexture)
+            new Projectile(origin, direction, projectileSpeed, damage, maxRange, hitsPerProjectile, projectileHitboxRadius, projectileTexture)
         );
     }
 
@@ -68,6 +72,12 @@ public class Bow implements Weapon {
 
     public void dispose() {
         projectileTexture.dispose();
+    }
+
+    public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
+        for (Projectile projectile : activeProjectiles) {
+            projectile.drawHitboxDebug(shapeRenderer);
+        }
     }
 
 }
