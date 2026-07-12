@@ -1,0 +1,41 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": "extensions",
+    "folders": [
+        ".",
+        "maps"
+    ],
+    "properties": [
+    ],
+    "propertyTypes": [
+        {
+            "color": "#ffa49198",
+            "drawFill": true,
+            "id": 1,
+            "members": [
+            ],
+            "name": "EnemySpawn",
+            "type": "class",
+            "useAs": [
+                "object",
+                "project"
+            ]
+        },
+        {
+            "color": "#ff938ea4",
+            "drawFill": true,
+            "id": 2,
+            "members": [
+            ],
+            "name": "Door",
+            "type": "class",
+            "useAs": [
+                "object",
+                "project"
+            ]
+        }
+    ]
+}

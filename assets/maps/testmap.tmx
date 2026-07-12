@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="20" height="11" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="5">
+ <tileset firstgid="1" name="tileset_placeholder" tilewidth="32" tileheight="32" tilecount="2" columns="2">
+  <image source="../tileset_placeholder.png" width="64" height="32"/>
+ </tileset>
+ <layer id="1" name="Ground" width="20" height="11">
+  <data encoding="csv">
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+</data>
+ </layer>
+ <objectgroup id="2" name="Objects">
+  <object id="1" type="EnemySpawn" x="176.527" y="208.95">
+   <point/>
+  </object>
+  <object id="2" type="EnemySpawn" x="380.073" y="147.706">
+   <point/>
+  </object>
+  <object id="3" type="EnemySpawn" x="464.734" y="329.637">
+   <point/>
+  </object>
+  <object id="4" type="Door" x="320.63" y="12.6091">
+   <point/>
+  </object>
+ </objectgroup>
+</map>
