@@ -36,13 +36,13 @@ public class Bow implements Weapon {
     }
 
     @Override
-    public void update(float deltaTime, Enemy target) {
+    public void update(float deltaTime, List<Enemy> targets) {
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime;
         }
 
         for (Projectile projectile : activeProjectiles) {
-            projectile.update(deltaTime, target);
+            projectile.update(deltaTime, targets);
         }
         activeProjectiles.removeIf(Projectile::isExpired);
     }
@@ -53,9 +53,9 @@ public class Bow implements Weapon {
         );
     }
 
-    // "target" wird hier (noch) nicht direkt benutzt, gehört aber zur Signatur des Weapon-Interfaces
+    // "targets" wird hier (noch) nicht direkt benutzt, gehört aber zur Signatur des Weapon-Interfaces
     @Override
-    public boolean tryAttack(Vector2 origin, Vector2 direction, Enemy target) {
+    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets) {
         if (attackCooldownRemaining <= 0) {
             attackCooldownRemaining = attackCooldownDuration;
             fire(origin, direction);

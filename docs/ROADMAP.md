@@ -23,9 +23,12 @@ Eine Fernkampfwaffe (Projektil-System), Wechsel zwischen Nah-/Fernkampf ist hier
 - Umgesetzt: `Projectile` als eigenständige, sich über Zeit bewegende Entity (Position, Richtung, Geschwindigkeit, Lebensdauer/Reichweite, `hitsRemaining` als Vorbereitung für spätere Piercing-Effekte). `Bow` verwaltet eine `List<Projectile>` (sicheres Entfernen via `removeIf`), teilt sich eine einzige Textur statt pro Pfeil neu zu laden.
 - `Weapon`-Interface aus `Sword` und `Bow` extrahiert (`update(deltaTime, target)`, `tryAttack(origin, direction, target)`) — bewusst nur die Methoden, die wirklich polymorph gleich genutzt werden; Zeichnen bleibt getrennt, da Sword nur Debug-Hitbox zeigt, Bow aber echte Pfeil-Sprites.
 
-## ⬜ Quest 4: Der erste Raum
-Ein einzelner, in Tiled gebauter Raum mit Gegnern, Tür-Lock bis alle Gegner besiegt sind (siehe GDD 4).
+## ✅ Quest 4: Der erste Raum
+Ein einzelner, in Tiled gebauter Raum mit Gegnern, Tür-Lock bis alle Gegner besiegt sind (siehe GDD 4). **Bereits erledigt.**
 - Fertig wenn: Raum lädt aus Tiled-Datei, Tür öffnet sich erst nach Clear.
+- Umgesetzt: `Room` lädt/rendert Tiled-Maps (`TmxMapLoader`/`OrthogonalTiledMapRenderer`), liest `EnemySpawn`/`Door`-Objekte aus der Objekt-Ebene. `Door` (rot/grün eingefärbte Platzhalter-Textur) verriegelt, solange die Gegner-Liste nicht leer ist.
+- Nebenbei: Feste 640×360-Basisauflösung mit ganzzahlig skaliertem, letterboxtem Viewport (`GameConfig`), sauber auf 1080p/1440p/4K skalierbar; Fullscreen-Taste (`F11`); Gegner-Liste statt Einzel-Parameter über alle Waffen hinweg generalisiert.
+- Gelernt: libGDX' `TmxMapLoader` flippt Objekt-Y-Koordinaten beim Laden bereits selbst — kein zusätzlicher manueller Y-Flip nötig (anders als bei der Maus-Position).
 
 ## ⬜ Quest 5: Gegner, die zurückschlagen
 Einfaches Gegner-KI-Grundgerüst (Verfolgen, Angreifen), Schadenssystem für den Spieler (Leben, Game Over).

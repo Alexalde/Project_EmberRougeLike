@@ -18,6 +18,8 @@ public class GameSettings {
 
     public static boolean autoSwing = DefaultSettings.AUTO_SWING;
 
+    public static int fullscreenToggleKey = DefaultSettings.FULLSCREEN_TOGGLE_KEY;
+
     public static void resetToDefaults() {
         moveUpKeyPrimary = DefaultSettings.MOVE_UP_KEY_PRIMARY;
         moveUpKeySecondary = DefaultSettings.MOVE_UP_KEY_SECONDARY;
@@ -34,5 +36,7 @@ public class GameSettings {
         rangedAttackButton = DefaultSettings.RANGED_ATTACK_BUTTON;
 
         autoSwing = DefaultSettings.AUTO_SWING;
+
+        fullscreenToggleKey = DefaultSettings.FULLSCREEN_TOGGLE_KEY;
     }
 }

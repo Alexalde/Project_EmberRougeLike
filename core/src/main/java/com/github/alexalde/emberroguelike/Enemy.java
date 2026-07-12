@@ -23,6 +23,10 @@ public class Enemy {
 
     public void takeDamage(int amount){
         this.health = this.health - amount;
+
+        if (DebugSettings.logDamage) {
+            System.out.println("Enemy getroffen! Schaden: " + amount + ", verbleibendes Leben: " + health);
+        }
     }
 
     public boolean isAlive(){

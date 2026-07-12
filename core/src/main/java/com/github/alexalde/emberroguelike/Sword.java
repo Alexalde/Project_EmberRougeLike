@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 
+import java.util.List;
+
 public class Sword implements Weapon {
 
     private float attackCooldownDuration;
@@ -30,9 +32,9 @@ public class Sword implements Weapon {
         this.lastAttackDirection = new Vector2(1, 0);
     }
 
-    // "target" wird hier nicht gebraucht - Signatur folgt dem Weapon-Interface, das Bow braucht ihn
+    // "targets" wird hier nicht gebraucht - Signatur folgt dem Weapon-Interface, das Bow braucht sie
     @Override
-    public void update(float deltaTime, Enemy target) {
+    public void update(float deltaTime, List<Enemy> targets) {
         // Cooldown läuft ab
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime;
@@ -44,20 +46,23 @@ public class Sword implements Weapon {
         }
     }
 
-    private void attack(Vector2 origin, Vector2 direction, Enemy target) {
+    private void attack(Vector2 origin, Vector2 direction, List<Enemy> targets) {
         lastAttackDirection = direction.cpy();
         attackVisualTimeRemaining = attackVisualDuration;
 
-        if (target.isHitByArc(origin, direction, range, halfConeAngleDegrees)) {
-            target.takeDamage((int) damage);
+        // Ein Kegel-Schwung trifft ALLE Gegner darin gleichzeitig, nicht nur einen
+        for (Enemy target : targets) {
+            if (target.isAlive() && target.isHitByArc(origin, direction, range, halfConeAngleDegrees)) {
+                target.takeDamage((int) damage);
+            }
         }
     }
 
     @Override
-    public boolean tryAttack(Vector2 origin, Vector2 direction, Enemy target) {
+    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets) {
         if (attackCooldownRemaining <= 0){
             attackCooldownRemaining = attackCooldownDuration;
-            attack(origin, direction, target);
+            attack(origin, direction, targets);
             return true;
         }
         return false;

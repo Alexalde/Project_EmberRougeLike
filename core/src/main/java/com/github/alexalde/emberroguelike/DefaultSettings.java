@@ -20,4 +20,6 @@ public class DefaultSettings {
     public static final int RANGED_ATTACK_BUTTON = Input.Buttons.RIGHT;
 
     public static final boolean AUTO_SWING = false;
+
+    public static final int FULLSCREEN_TOGGLE_KEY = Input.Keys.F11;
 }

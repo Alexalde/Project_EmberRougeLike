@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2; // Neu importiert!
 
+import java.util.List;
+
 public class Player {
     // Wir ersetzen die losen floats für x und y durch LibGDX Vektoren
     private Vector2 position;
@@ -44,11 +46,10 @@ public class Player {
         this.aimDirection = new Vector2(1, 0);
     }
 
-    // "target" ist bewusst ein einzelner Dummy-Gegner für den Hitbox-Test (Quest 2) —
-    // sobald mehrere Gegner gleichzeitig existieren (Quest 4-6), wird das zu einer Liste
-    public void update(float deltaTime, Enemy target) {
-        sword.update(deltaTime, target);
-        bow.update(deltaTime, target);
+    // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject)
+    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition) {
+        sword.update(deltaTime, targets);
+        bow.update(deltaTime, targets);
 
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
@@ -104,27 +105,24 @@ public class Player {
             }
         }
 
-        // Bildschirmbegrenzung (Clamping)
-        // Grenzen für X (0 bis Bildschirmbreite minus Bildbreite)
+        // Bildschirmbegrenzung (Clamping) - gegen die feste logische Weltgröße, nicht die
+        // tatsächliche Fenstergröße (die kann jetzt größer/kleiner/anders skaliert sein)
+        // Grenzen für X (0 bis Weltbreite minus Bildbreite)
         if (position.x < 0) {
             position.x = 0;
-        } else if (position.x > Gdx.graphics.getWidth() - texture.getWidth()) {
-            position.x = Gdx.graphics.getWidth() - texture.getWidth();
+        } else if (position.x > GameConfig.WORLD_WIDTH - texture.getWidth()) {
+            position.x = GameConfig.WORLD_WIDTH - texture.getWidth();
         }
 
-        // Grenzen für Y (0 bis Bildschirmhöhe minus Bildhöhe)
+        // Grenzen für Y (0 bis Welthöhe minus Bildhöhe)
         if (position.y < 0) {
             position.y = 0;
-        } else if (position.y > Gdx.graphics.getHeight() - texture.getHeight()) {
-            position.y = Gdx.graphics.getHeight() - texture.getHeight();
+        } else if (position.y > GameConfig.WORLD_HEIGHT - texture.getHeight()) {
+            position.y = GameConfig.WORLD_HEIGHT - texture.getHeight();
         }
 
         Vector2 center = getCenter();
-
-        // Y-Flip: Maus-Koordinaten haben (0,0) oben links, unsere Welt hat (0,0) unten links
-        float mouseWorldY = Gdx.graphics.getHeight() - Gdx.input.getY();
-
-        Vector2 targetDirection = new Vector2(Gdx.input.getX() - center.x, mouseWorldY - center.y);
+        Vector2 targetDirection = mouseWorldPosition.cpy().sub(center);
 
         if (targetDirection.len() > 0) {
             targetDirection.nor();
@@ -133,14 +131,14 @@ public class Player {
             boolean meleeInputActive = GameSettings.autoSwing
                     ? Gdx.input.isButtonPressed(GameSettings.meleeAttackButton)
                     : Gdx.input.isButtonJustPressed(GameSettings.meleeAttackButton);
-            if (meleeInputActive && sword.tryAttack(center, targetDirection, target)) {
+            if (meleeInputActive && sword.tryAttack(center, targetDirection, targets)) {
                 aimDirection = targetDirection;
             }
 
             boolean rangedInputActive = GameSettings.autoSwing
                     ? Gdx.input.isButtonPressed(GameSettings.rangedAttackButton)
                     : Gdx.input.isButtonJustPressed(GameSettings.rangedAttackButton);
-            if (rangedInputActive && bow.tryAttack(center, targetDirection, target)) {
+            if (rangedInputActive && bow.tryAttack(center, targetDirection, targets)) {
                 aimDirection = targetDirection;
             }
         }
