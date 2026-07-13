@@ -45,7 +45,7 @@ Der Kern-Loop (Movement, Dash, Combat, Räume) steht — Zeit, alle bisherigen P
 - Fertig wenn: Spieler, Gegner, Waffen/Projektile und Tiles nutzen eigene Sprites statt Platzhalter-Grafiken.
 - Technischer Vorlauf (vermerkt 2026-07-13):
   - **Pixel-Snapping:** Sprite-Zeichenposition beim `draw()` auf das nächste ganze logische Pixel runden (z.B. `Math.round(position.x)`), unabhängig von der eigentlichen (weiterhin fließkomma-genauen) Bewegungsberechnung — verhindert Wackeln/Shimmer an Sprite-Rändern bei skaliertem Nearest-Neighbor-Rendering.
-  - **Autotiling (Tiled "Terrain Sets"/"Wang Sets"):** Kleines Set an Basis-Kacheln, automatische Auswahl der passenden Übergangskachel anhand der Nachbarn — spart Kunst-Aufwand für Terrain-Übergänge, besonders wertvoll im Hinblick auf Quest 11 (Raum-Pool für Prozeduralität).
+  - **Dual-Grid System für Terrain-Übergänge:** Render-Gitter um eine halbe Kachel gegen das Daten-Gitter versetzt; jede Render-Kachel wird aus den 4 angrenzenden Daten-Zellen bestimmt (2⁴ = 16 Kombinationen, 16 Kachel-Grafiken reichen für lückenlose Übergänge, statt bis zu 47 bei klassischem Blob-Autotiling). Kein natives Tiled-Feature (anders als "Wang Sets") — müsste als eigener Rendering-Layer in unserem Code gebaut werden. Besonders wertvoll für Quest 11 (prozedurale Generierung), da Terrain-Typen dort zur Laufzeit von einem Algorithmus entschieden werden, nicht von Hand in Tiled vorgezeichnet.
   - **Tile-Extrusion/Bleeding:** Kleiner Pixel-Rand um jede Kachel im Tileset-Bild, verhindert sichtbare Nahtlinien zwischen Kacheln bei skaliertem Rendering.
 
 ## ⬜ Quest 8: Beute und Level-Ups
