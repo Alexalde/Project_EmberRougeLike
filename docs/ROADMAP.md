@@ -43,6 +43,10 @@ Mehrere handgebaute Räume, verbunden zu einem kleinen Level, Übergänge zwisch
 ## ⬜ Quest 7: Aus der Asche geschmiedet (eigener Art-Pass)
 Der Kern-Loop (Movement, Dash, Combat, Räume) steht — Zeit, alle bisherigen Platzhalter-Grafiken durch eigene Pixelart zu ersetzen (siehe GDD 5).
 - Fertig wenn: Spieler, Gegner, Waffen/Projektile und Tiles nutzen eigene Sprites statt Platzhalter-Grafiken.
+- Technischer Vorlauf (vermerkt 2026-07-13):
+  - **Pixel-Snapping:** Sprite-Zeichenposition beim `draw()` auf das nächste ganze logische Pixel runden (z.B. `Math.round(position.x)`), unabhängig von der eigentlichen (weiterhin fließkomma-genauen) Bewegungsberechnung — verhindert Wackeln/Shimmer an Sprite-Rändern bei skaliertem Nearest-Neighbor-Rendering.
+  - **Autotiling (Tiled "Terrain Sets"/"Wang Sets"):** Kleines Set an Basis-Kacheln, automatische Auswahl der passenden Übergangskachel anhand der Nachbarn — spart Kunst-Aufwand für Terrain-Übergänge, besonders wertvoll im Hinblick auf Quest 11 (Raum-Pool für Prozeduralität).
+  - **Tile-Extrusion/Bleeding:** Kleiner Pixel-Rand um jede Kachel im Tileset-Bild, verhindert sichtbare Nahtlinien zwischen Kacheln bei skaliertem Rendering.
 
 ## ⬜ Quest 8: Beute und Level-Ups
 In-Run-Progression: Raum-Belohnungen und Level-Up-System (siehe GDD 3.1).
