@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="20" height="11" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="5">
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="20" height="11" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="7">
  <tileset firstgid="1" name="tileset_placeholder" tilewidth="32" tileheight="32" tilecount="2" columns="2">
   <image source="../tileset_placeholder.png" width="64" height="32"/>
  </tileset>
@@ -29,6 +29,9 @@
    <point/>
   </object>
   <object id="4" type="Door" x="320.63" y="12.6091">
+   <point/>
+  </object>
+  <object id="6" type="EnemySpawn" x="261.188" y="118.885">
    <point/>
   </object>
  </objectgroup>

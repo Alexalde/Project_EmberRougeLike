@@ -20,6 +20,8 @@ public class GameSettings {
 
     public static int fullscreenToggleKey = DefaultSettings.FULLSCREEN_TOGGLE_KEY;
 
+    public static int restartKey = DefaultSettings.RESTART_KEY;
+
     public static void resetToDefaults() {
         moveUpKeyPrimary = DefaultSettings.MOVE_UP_KEY_PRIMARY;
         moveUpKeySecondary = DefaultSettings.MOVE_UP_KEY_SECONDARY;
@@ -38,5 +40,7 @@ public class GameSettings {
         autoSwing = DefaultSettings.AUTO_SWING;
 
         fullscreenToggleKey = DefaultSettings.FULLSCREEN_TOGGLE_KEY;
+
+        restartKey = DefaultSettings.RESTART_KEY;
     }
 }
