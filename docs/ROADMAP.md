@@ -30,9 +30,11 @@ Ein einzelner, in Tiled gebauter Raum mit Gegnern, Tür-Lock bis alle Gegner bes
 - Nebenbei: Feste 640×360-Basisauflösung mit ganzzahlig skaliertem, letterboxtem Viewport (`GameConfig`), sauber auf 1080p/1440p/4K skalierbar; Fullscreen-Taste (`F11`); Gegner-Liste statt Einzel-Parameter über alle Waffen hinweg generalisiert.
 - Gelernt: libGDX' `TmxMapLoader` flippt Objekt-Y-Koordinaten beim Laden bereits selbst — kein zusätzlicher manueller Y-Flip nötig (anders als bei der Maus-Position).
 
-## ⬜ Quest 5: Gegner, die zurückschlagen
-Einfaches Gegner-KI-Grundgerüst (Verfolgen, Angreifen), Schadenssystem für den Spieler (Leben, Game Over).
+## ✅ Quest 5: Gegner, die zurückschlagen
+Einfaches Gegner-KI-Grundgerüst (Verfolgen, Angreifen), Schadenssystem für den Spieler (Leben, Game Over). **Bereits erledigt.**
 - Fertig wenn: Mindestens 1 Gegnertyp verfolgt/greift an, Spieler kann sterben.
+- Umgesetzt: `EnemyState` (CHASING/ATTACKING) mit Hysterese (unterschiedliche Schwellenwerte zum Betreten/Verlassen von ATTACKING, verhindert Zittern an der Grenze). `Player` hat `health`/`isAlive()`/`takeDamage()` (respektiert `isInvincible()` vom Dash). `Main.startGame()` als wiederverwendbarer Aufbau, Game-Over-Zustand friert die Logik ein, `R` startet neu.
+- Bewusst zurückgestellt: globale Spieler-Invincibility-Frames nach Treffer (verhindert aktuell nicht, dass mehrere Gegner im selben Frame gleichzeitig treffen) — Balancing-Frage für später.
 
 ## ⬜ Quest 6: Der Pfad durch mehrere Räume
 Mehrere handgebaute Räume, verbunden zu einem kleinen Level, Übergänge zwischen Räumen.

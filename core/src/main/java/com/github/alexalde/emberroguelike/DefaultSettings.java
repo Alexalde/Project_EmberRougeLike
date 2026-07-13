@@ -22,4 +22,6 @@ public class DefaultSettings {
     public static final boolean AUTO_SWING = false;
 
     public static final int FULLSCREEN_TOGGLE_KEY = Input.Keys.F11;
+
+    public static final int RESTART_KEY = Input.Keys.R;
 }

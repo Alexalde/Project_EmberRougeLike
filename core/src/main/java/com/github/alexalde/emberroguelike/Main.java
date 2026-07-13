@@ -2,6 +2,7 @@ package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -26,6 +27,7 @@ public class Main extends ApplicationAdapter {
     private Room room;
     private Player player; // Hier ist unser Spieler-Objekt!
     private List<Enemy> enemies;
+    private boolean gameOver;
 
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
@@ -43,6 +45,31 @@ public class Main extends ApplicationAdapter {
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
+        startGame();
+
+        Pixmap pixmap = new Pixmap(8, 8, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.RED);
+        pixmap.fill();
+        mouseDebugTexture = new Texture(pixmap);
+        pixmap.dispose();
+    }
+
+    // Baut Raum/Spieler/Gegner komplett neu auf - beim allerersten Start UND bei jedem Neustart
+    // nach Game Over. Alte Objekte vorher aufräumen, sonst verlieren wir bei jedem Neustart
+    // Texturen/GPU-Ressourcen (Speicherleck)
+    private void startGame() {
+        if (room != null) {
+            room.dispose();
+        }
+        if (player != null) {
+            player.dispose();
+        }
+        if (enemies != null) {
+            for (Enemy enemy : enemies) {
+                enemy.dispose();
+            }
+        }
+
         room = new Room("maps/testmap.tmx");
 
         // Wir instanziieren unseren Spieler bei X:200, Y:200
@@ -53,11 +80,7 @@ public class Main extends ApplicationAdapter {
             enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
         }
 
-        Pixmap pixmap = new Pixmap(8, 8, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.RED);
-        pixmap.fill();
-        mouseDebugTexture = new Texture(pixmap);
-        pixmap.dispose();
+        gameOver = false;
     }
 
     // Größtmöglicher GANZZAHLIGER Skalierungsfaktor, der noch aufs Fenster passt - Rest wird
@@ -93,21 +116,34 @@ public class Main extends ApplicationAdapter {
         camera.unproject(mouseScreenCoords, viewportX, viewportY, viewportWidth, viewportHeight);
         Vector2 mouseWorldPosition = new Vector2(mouseScreenCoords.x, mouseScreenCoords.y);
 
-        // 1. Logik updaten
-        player.update(deltaTime, enemies, mouseWorldPosition);
+        // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
+        if (!gameOver) {
+            player.update(deltaTime, enemies, mouseWorldPosition);
 
-        // Tote Gegner entfernen: erst Texturen aufräumen (sonst Speicherleck), dann erst aus
-        // der Liste löschen (siehe ConcurrentModificationException-Thema von neulich - deshalb
-        // zwei getrennte Schritte statt Aufräumen mitten in der removeIf-Bedingung)
-        for (Enemy enemy : enemies) {
-            if (!enemy.isAlive()) {
-                enemy.dispose();
+            for (Enemy enemy : enemies) {
+                enemy.update(deltaTime, player);
             }
-        }
-        enemies.removeIf(enemy -> !enemy.isAlive());
 
-        // Tür bleibt verriegelt, solange noch Gegner übrig sind
-        room.getDoor().setLocked(!enemies.isEmpty());
+            // Tote Gegner entfernen: erst Texturen aufräumen (sonst Speicherleck), dann erst aus
+            // der Liste löschen (siehe ConcurrentModificationException-Thema von neulich - deshalb
+            // zwei getrennte Schritte statt Aufräumen mitten in der removeIf-Bedingung)
+            for (Enemy enemy : enemies) {
+                if (!enemy.isAlive()) {
+                    enemy.dispose();
+                }
+            }
+            enemies.removeIf(enemy -> !enemy.isAlive());
+
+            // Tür bleibt verriegelt, solange noch Gegner übrig sind
+            room.getDoor().setLocked(!enemies.isEmpty());
+
+            if (!player.isAlive()) {
+                gameOver = true;
+                System.out.println("GAME OVER - Neustart mit " + Input.Keys.toString(GameSettings.restartKey));
+            }
+        } else if (Gdx.input.isKeyJustPressed(GameSettings.restartKey)) {
+            startGame();
+        }
 
         // 2. Bildschirm leeren
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);

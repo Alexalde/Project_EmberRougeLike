@@ -15,10 +15,82 @@ public class Enemy {
 
     private static final float HURTBOX_RADIUS = 16f;
 
+    private enum EnemyState {
+        CHASING,
+        ATTACKING
+    }
+
+    private EnemyState state;
+    private float moveSpeed;
+    private float attackRange;
+    // Größerer Schwellenwert zum Verlassen von ATTACKING als zum Betreten, damit der Zustand
+    // an der Grenze nicht zwischen CHASING/ATTACKING "zittert" (Hysterese)
+    private float attackRangeExitBuffer;
+    private float attackCooldownDuration;
+    private float attackCooldownRemaining;
+    private float attackDamage;
+
     public Enemy(float startX, float startY){
         this.position = new Vector2(startX, startY);
         this.texture = new Texture("enemy_placeholder.png");
         this.health = 20;
+
+        this.state = EnemyState.CHASING;
+        this.moveSpeed = 60f;
+        this.attackRange = 24f;
+        this.attackRangeExitBuffer = 8f;
+        this.attackCooldownDuration = 1f;
+        this.attackCooldownRemaining = 0f;
+        this.attackDamage = 10f;
+    }
+
+    public void update(float deltaTime, Player player) {
+        if (!isAlive()) {
+            return;
+        }
+
+        Vector2 myCenter = getCenter();
+        Vector2 playerCenter = player.getCenter();
+        float distance = myCenter.dst(playerCenter);
+
+        // Schwellenwert hängt vom AKTUELLEN Zustand ab - verhindert Zittern an der Grenze,
+        // ohne einen zusätzlichen Timer, der aus dem Ruder laufen könnte
+        if (state == EnemyState.ATTACKING) {
+            if (distance > attackRange + attackRangeExitBuffer) {
+                state = EnemyState.CHASING;
+            }
+        } else {
+            if (distance <= attackRange) {
+                state = EnemyState.ATTACKING;
+            }
+        }
+
+        if (state == EnemyState.CHASING) {
+            // Richtung zum Player bestimmen
+            Vector2 direction = playerCenter.cpy().sub(myCenter);
+
+            // Normalisieren
+            // nor() macht die Länge des Vektors zu 1, wenn er nicht 0 ist (wichtig, sonst Crash durch Division durch 0)
+            if (direction.len() > 0) {
+                direction.nor();
+            }
+
+            // Bewegung auf die Position anrechnen
+            // position = position + direction * speed * deltaTime
+            position.x += direction.x * moveSpeed * deltaTime;
+            position.y += direction.y * moveSpeed * deltaTime;
+
+        } else {
+            if (attackCooldownRemaining > 0) {
+                attackCooldownRemaining -= deltaTime;
+            } else {
+                attackCooldownRemaining = attackCooldownDuration;
+                if (DebugSettings.logDamage) {
+                    System.out.println("Enemy greift an!");
+                }
+                player.takeDamage(attackDamage);
+            }
+        }
     }
 
     public void takeDamage(int amount){

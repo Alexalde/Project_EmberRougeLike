@@ -35,6 +35,9 @@ public class Player {
     private Bow bow;
     private Vector2 aimDirection;
 
+    private float health;
+    private float maxHealth;
+
     public Player(float startX, float startY) {
         this.position = new Vector2(startX, startY);
         this.direction = new Vector2(0, 0);
@@ -44,6 +47,8 @@ public class Player {
         this.sword = new Sword();
         this.bow = new Bow();
         this.aimDirection = new Vector2(1, 0);
+        this.maxHealth = 100f;
+        this.health = maxHealth;
     }
 
     // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject)
@@ -144,12 +149,34 @@ public class Player {
         }
     }
 
-    // Wird später vom Schadenssystem abgefragt, bevor Schaden angewendet wird (siehe Quest 5)
+    // Wird vom Schadenssystem abgefragt, bevor Schaden angewendet wird
     public boolean isInvincible() {
         return state == PlayerState.DASHING;
     }
 
-    private Vector2 getCenter() {
+    public void takeDamage(float amount) {
+        if (isInvincible()) {
+            return;
+        }
+
+        if (health - amount > 0) {
+            health -= amount;
+            if (DebugSettings.logDamage) {
+                System.out.println("Schaden erlitten! Schaden: " + amount + ", verbleibendes Leben: " + health);
+            }
+        } else {
+            health = 0;
+            if (DebugSettings.logDamage) {
+                System.out.println("Tödlicher Schaden erlitten!");
+            }
+        }
+    }
+
+    public boolean isAlive() {
+        return health > 0;
+    }
+
+    public Vector2 getCenter() {
         return new Vector2(position.x + texture.getWidth() / 2f, position.y + texture.getHeight() / 2f);
     }
 
