@@ -17,6 +17,7 @@ public class Door {
     private String targetDoorName;
 
     private static final float INTERACTION_RADIUS = 20f;
+    private static final float ENTRY_OFFSET_DISTANCE = 32f;
 
     public Door(Vector2 position, String name, String targetRoom, String targetDoorName) {
         this.position = position;
@@ -49,6 +50,24 @@ public class Door {
 
     public String getTargetDoorName() {
         return targetDoorName;
+    }
+
+    // Position, an der der Spieler auftauchen soll, wenn er DURCH DIESE Tür in den Raum eintritt -
+    // ein Stück von der Tür weg ins Rauminnere versetzt (sonst würde isPlayerInRange() sofort
+    // wieder auslösen und den Spieler direkt zurückschicken).
+    public Vector2 getEntryPosition() {
+        Vector2 doorPos = position.cpy();
+        if (name.startsWith("north")) {
+            return new Vector2(doorPos.x, doorPos.y - ENTRY_OFFSET_DISTANCE);
+        } else if (name.startsWith("east")) {
+            return new Vector2(doorPos.x - ENTRY_OFFSET_DISTANCE, doorPos.y);
+        } else if (name.startsWith("south")) {
+            return new Vector2(doorPos.x, doorPos.y + ENTRY_OFFSET_DISTANCE);
+        } else if (name.startsWith("west")) {
+            return new Vector2(doorPos.x + ENTRY_OFFSET_DISTANCE, doorPos.y);
+        } else {
+            return doorPos;
+        }
     }
 
     // Kapselt beide Bedingungen ("nah genug" UND "entriegelt") an einer Stelle,

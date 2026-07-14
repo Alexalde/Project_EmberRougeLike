@@ -84,6 +84,25 @@ public class Main extends ApplicationAdapter {
         gameOver = false;
     }
 
+    // Wechselt in einen anderen Raum durch eine Tür - Raum/Gegner werden komplett neu aufgebaut
+    // (wie bei startGame()), der Spieler landet an der passenden Tür im Zielraum
+    private void switchRoom(String targetRoomPath, String targetDoorName) {
+        room.dispose();
+        for (Enemy enemy : enemies) {
+            enemy.dispose();
+        }
+
+        room = new Room(targetRoomPath);
+
+        Door entryDoor = room.getDoorByName(targetDoorName);
+        player.setCenter(entryDoor.getEntryPosition());
+
+        enemies = new ArrayList<>();
+        for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
+            enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
+        }
+    }
+
     // Kamera folgt dem Spieler, geklammert an die Raumgrenzen - ist der Raum in einer
     // Dimension kleiner/gleich dem Bildschirm, wird stattdessen auf die Raummitte zentriert
     // (sonst wäre der Klammer-Bereich ungültig: obere Grenze kleiner als untere)
@@ -145,7 +164,7 @@ public class Main extends ApplicationAdapter {
 
         // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
         if (!gameOver) {
-            player.update(deltaTime, enemies, mouseWorldPosition);
+            player.update(deltaTime, enemies, mouseWorldPosition, room.getPixelWidth(), room.getPixelHeight());
 
             for (Enemy enemy : enemies) {
                 enemy.update(deltaTime, player);
@@ -165,9 +184,9 @@ public class Main extends ApplicationAdapter {
             for (Door door : room.getDoors()) {
                 door.setLocked(!enemies.isEmpty());
 
-                // TODO (Task 26): echten Raumwechsel statt nur Debug-Print auslösen
                 if (door.isPlayerInRange(player.getCenter())) {
-                    System.out.println("Spieler an entriegelter Tür '" + door.getName() + "' - Raumwechsel kommt in Task 26");
+                    switchRoom(door.getTargetRoom(), door.getTargetDoorName());
+                    break; // "room"/"enemies" zeigen jetzt auf den neuen Raum - alte Türen-Liste nicht weiter durchgehen
                 }
             }
 
