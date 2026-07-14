@@ -64,6 +64,7 @@ Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen.
 ## ⬜ Quest 11: Das Chaos ordnet sich (Prozedurale Generierung)
 Erste Version der prozeduralen Raumkombination, aufbauend auf dem Pool handgebauter Räume aus Quest 4–6 (Ansatz wird dann final entschieden, siehe GDD 4).
 - Fertig wenn: Ein Run besteht aus zufällig zusammengesetzten Räumen aus dem bestehenden Raum-Pool.
+- Technischer Vorlauf (vermerkt 2026-07-13): Quest 6s `Door.targetRoom`/`targetDoorName` sind fest verdrahtete Verknüpfungen, passend für handgebaute, feste Level — aber NICHT direkt geeignet für einen austauschbaren Raum-Pool (der Generator soll ja zur Laufzeit einen beliebigen kompatiblen Raum wählen, nicht einen fest vorgegebenen). Die Tür-Namenskonvention (Himmelsrichtungen, `"north"`/`"south"`/...) bleibt aber relevant und wird bewusst schon jetzt konsequent genutzt — vermutlich reicht die Richtung allein als Kompatibilitäts-Kriterium für den Pool-Mechanismus, `targetRoom`/`targetDoorName` bleiben parallel für fest verankerte Räume (z.B. Startraum) bestehen. Endgültiger Ansatz erst hier entscheiden, nicht vorher raten (siehe Weapon-Interface-Präzedenzfall).
 
 ---
 Diese Liste ist ein lebendes Dokument — Reihenfolge/Inhalt kann sich anpassen, sobald wir tiefer in einzelne Quests einsteigen.

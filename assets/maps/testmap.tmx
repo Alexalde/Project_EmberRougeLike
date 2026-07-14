@@ -28,7 +28,11 @@
   <object id="3" type="EnemySpawn" x="464.734" y="329.637">
    <point/>
   </object>
-  <object id="4" type="Door" x="320.63" y="12.6091">
+  <object id="4" name="north" type="Door" x="320.63" y="12.6091">
+   <properties>
+    <property name="targetRoom" value="maps/room_template.tmx"/>
+    <property name="targetDoorName" value="south"/>
+   </properties>
    <point/>
   </object>
   <object id="6" type="EnemySpawn" x="261.188" y="118.885">

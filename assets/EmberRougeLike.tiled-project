@@ -29,6 +29,16 @@
             "drawFill": true,
             "id": 2,
             "members": [
+                {
+                    "name": "targetRoom",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "targetDoorName",
+                    "type": "string",
+                    "value": ""
+                }
             ],
             "name": "Door",
             "type": "class",

@@ -11,10 +11,20 @@ public class Door {
     private Texture texture;
     private boolean locked;
 
-    public Door(Vector2 position) {
+    // Eigener Name (Tiled-Objekt-Name), damit andere Räume gezielt DIESE Tür als Ziel referenzieren können
+    private String name;
+    private String targetRoom;
+    private String targetDoorName;
+
+    private static final float INTERACTION_RADIUS = 20f;
+
+    public Door(Vector2 position, String name, String targetRoom, String targetDoorName) {
         this.position = position;
         this.texture = new Texture("door_placeholder.png");
         this.locked = true;
+        this.name = name;
+        this.targetRoom = targetRoom;
+        this.targetDoorName = targetDoorName;
     }
 
     public void setLocked(boolean locked) {
@@ -23,6 +33,28 @@ public class Door {
 
     public boolean isLocked() {
         return locked;
+    }
+
+    public Vector2 getPosition() {
+        return position;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getTargetRoom() {
+        return targetRoom;
+    }
+
+    public String getTargetDoorName() {
+        return targetDoorName;
+    }
+
+    // Kapselt beide Bedingungen ("nah genug" UND "entriegelt") an einer Stelle,
+    // statt dass Main/Player das jedes Mal getrennt abfragen müsste
+    public boolean isPlayerInRange(Vector2 playerCenter) {
+        return !locked && position.dst(playerCenter) <= INTERACTION_RADIUS;
     }
 
     public void draw(SpriteBatch batch) {
