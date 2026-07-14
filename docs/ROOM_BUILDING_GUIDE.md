@@ -36,6 +36,17 @@ Für **jede** Tür in diesem Raum:
 
 Ein Raum kann mehrere Türen haben (z.B. `"north"`, `"east"`) — jede mit eigenen `targetRoom`/`targetDoorName`-Werten, die zu unterschiedlichen Nachbarräumen zeigen. Plant euch am besten kurz auf Papier/im Kopf, welcher Raum mit welchem über welche Tür verbunden sein soll, bevor ihr lostippt — das erspart nachträgliches Umbenennen.
 
+### Namenskonvention bei mehreren Türen auf derselben Seite (Verzweigung/Merge)
+
+Wenn sich ein Pfad aufteilt (zwei Nord-Ausgänge aus einem Raum) und später wieder zusammenläuft (ein Raum mit zwei Süd-Eingängen), reicht die reine Himmelsrichtung nicht mehr zur Unterscheidung. Lösung: eine **Spur-Kennung** anhängen, die sich über die **gesamte Länge** eines Pfades durchzieht, nicht nur an Verzweigung/Merge:
+
+- Verzweigung: `"north_west"` (führt in den Westpfad) und `"north_east"` (führt in den Ostpfad).
+- **Jeder** Raum entlang eines Pfades behält dieselbe Kennung bei seinen Türen (z.B. `"south_west"`/`"north_west"` im selben Raum, falls der Pfad einfach weiterläuft) — die Kennung ist eine Pfad-Identität, kein Merkmal eines einzelnen Raums.
+- Merge: Der Zielraum bekommt `"south_west"` (empfängt den Westpfad) und `"south_east"` (empfängt den Ostpfad) — automatisch die räumlich passende Seite, weil der Name direkt dem Herkunftspfad entspricht.
+- Falls ein Pfad sich nochmal verzweigt: weiter anhängen, z.B. `"north_west_a"`/`"north_west_b"`.
+
+West/Ost statt Links/Rechts, weil Himmelsrichtungen eindeutig sind — Links/Rechts hängt von der (gedachten) Blickrichtung ab.
+
 ## 7. Speichern
 
 Fertig — der Code (`Room.java`) liest `targetRoom`/`targetDoorName` bereits automatisch mit ein. Die eigentliche Wechsel-Logik (was beim Kollidieren mit einer entriegelten Tür passiert) folgt in einem separaten Schritt.
