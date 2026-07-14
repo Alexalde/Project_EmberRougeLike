@@ -51,8 +51,10 @@ public class Player {
         this.health = maxHealth;
     }
 
-    // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject)
-    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition) {
+    // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject).
+    // "roomWidth"/"roomHeight" sind die PIXEL-Maße des AKTUELLEN Raums (nicht der festen Viewport-
+    // Größe) - Räume können größer als der Bildschirm sein, siehe updateCamera() in Main
+    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition, float roomWidth, float roomHeight) {
         sword.update(deltaTime, targets);
         bow.update(deltaTime, targets);
 
@@ -110,20 +112,20 @@ public class Player {
             }
         }
 
-        // Bildschirmbegrenzung (Clamping) - gegen die feste logische Weltgröße, nicht die
-        // tatsächliche Fenstergröße (die kann jetzt größer/kleiner/anders skaliert sein)
-        // Grenzen für X (0 bis Weltbreite minus Bildbreite)
+        // Raumbegrenzung (Clamping) - gegen die tatsächliche Größe des AKTUELLEN Raums, nicht
+        // gegen die feste Viewport-Größe (Räume können größer als der Bildschirm sein)
+        // Grenzen für X (0 bis Raumbreite minus Bildbreite)
         if (position.x < 0) {
             position.x = 0;
-        } else if (position.x > GameConfig.WORLD_WIDTH - texture.getWidth()) {
-            position.x = GameConfig.WORLD_WIDTH - texture.getWidth();
+        } else if (position.x > roomWidth - texture.getWidth()) {
+            position.x = roomWidth - texture.getWidth();
         }
 
-        // Grenzen für Y (0 bis Welthöhe minus Bildhöhe)
+        // Grenzen für Y (0 bis Raumhöhe minus Bildhöhe)
         if (position.y < 0) {
             position.y = 0;
-        } else if (position.y > GameConfig.WORLD_HEIGHT - texture.getHeight()) {
-            position.y = GameConfig.WORLD_HEIGHT - texture.getHeight();
+        } else if (position.y > roomHeight - texture.getHeight()) {
+            position.y = roomHeight - texture.getHeight();
         }
 
         Vector2 center = getCenter();
@@ -178,6 +180,12 @@ public class Player {
 
     public Vector2 getCenter() {
         return new Vector2(position.x + texture.getWidth() / 2f, position.y + texture.getHeight() / 2f);
+    }
+
+    // Gegenstück zu getCenter() - für Raumwechsel, wo der Spieler an einer Zielposition
+    // (Zentrum, nicht Ecke) auftauchen soll
+    public void setCenter(Vector2 center) {
+        this.position.set(center.x - texture.getWidth() / 2f, center.y - texture.getHeight() / 2f);
     }
 
     public void draw(SpriteBatch batch) {

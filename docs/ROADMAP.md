@@ -36,9 +36,12 @@ Einfaches Gegner-KI-Grundgerüst (Verfolgen, Angreifen), Schadenssystem für den
 - Umgesetzt: `EnemyState` (CHASING/ATTACKING) mit Hysterese (unterschiedliche Schwellenwerte zum Betreten/Verlassen von ATTACKING, verhindert Zittern an der Grenze). `Player` hat `health`/`isAlive()`/`takeDamage()` (respektiert `isInvincible()` vom Dash). `Main.startGame()` als wiederverwendbarer Aufbau, Game-Over-Zustand friert die Logik ein, `R` startet neu.
 - Bewusst zurückgestellt: globale Spieler-Invincibility-Frames nach Treffer (verhindert aktuell nicht, dass mehrere Gegner im selben Frame gleichzeitig treffen) — Balancing-Frage für später.
 
-## ⬜ Quest 6: Der Pfad durch mehrere Räume
-Mehrere handgebaute Räume, verbunden zu einem kleinen Level, Übergänge zwischen Räumen.
+## ✅ Quest 6: Der Pfad durch mehrere Räume
+Mehrere handgebaute Räume, verbunden zu einem kleinen Level, Übergänge zwischen Räumen. **Bereits erledigt.**
 - Fertig wenn: Spieler kann durch mind. 3-4 verbundene, handgebaute Räume laufen.
+- Umgesetzt: `Door` um `targetRoom`/`targetDoorName` erweitert (Tür-Objekte per Namenskonvention verknüpft, siehe Quest 11), `Room.getDoorByName()`, `Door.getEntryPosition()` (Versatz ins Rauminnere anhand des Richtungs-Präfix im Türnamen, verhindert sofortiges Zurück-Triggern), `Main.switchRoom()` (Raum/Gegner komplett neu aufbauen, Spieler an der Zieltür zentrieren), scrollende, an die Raumgrenzen geklammerte Kamera (zentriert, wenn der Raum kleiner als der Viewport ist).
+- Gefundene Bugs beim Testen mehrerer verbundener Räume: `Player`s Bewegungs-Clamping bezog sich fälschlich auf die feste Viewport-Größe (`GameConfig.WORLD_WIDTH/HEIGHT`) statt auf die tatsächliche Größe des aktuellen Raums (`Room.getPixelWidth()/getPixelHeight()`) — fiel erst auf, sobald ein Raum größer als der Viewport war. Zwei `.tmx`-Dateien hatten ihre Objekt-Ebene `"object"` statt `"Objects"` genannt (Tiled-Ebenenname wird von `Room` hart erwartet) → `NullPointerException` beim Laden.
+- Bewusst zurückgestellt: Räume merken sich aktuell KEINEN Zustand — `switchRoom()` verwirft den alten `Room` (inkl. Gegnerliste) komplett und baut den Zielraum jedes Mal frisch aus der `.tmx`-Datei auf. Besiegte Gegner sind also wieder da, sobald man einen Raum erneut betritt. Bewusst nicht jetzt gelöst, da die richtige Lösung (persistenter Raum-Cache vs. "einmal betreten, für den Rest des Runs geleert") von der Entscheidung in Quest 11 abhängt (fester Raum-Pool vs. prozedural erzeugte Räume) — hier vorzugreifen wäre eine Abstraktion für ein noch nicht endgültig geklärtes Problem.
 
 ## ⬜ Quest 7: Aus der Asche geschmiedet (eigener Art-Pass)
 Der Kern-Loop (Movement, Dash, Combat, Räume) steht — Zeit, alle bisherigen Platzhalter-Grafiken durch eigene Pixelart zu ersetzen (siehe GDD 5).
@@ -64,6 +67,7 @@ Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen.
 ## ⬜ Quest 11: Das Chaos ordnet sich (Prozedurale Generierung)
 Erste Version der prozeduralen Raumkombination, aufbauend auf dem Pool handgebauter Räume aus Quest 4–6 (Ansatz wird dann final entschieden, siehe GDD 4).
 - Fertig wenn: Ein Run besteht aus zufällig zusammengesetzten Räumen aus dem bestehenden Raum-Pool.
+- Technischer Vorlauf (vermerkt 2026-07-13): Quest 6s `Door.targetRoom`/`targetDoorName` sind fest verdrahtete Verknüpfungen, passend für handgebaute, feste Level — aber NICHT direkt geeignet für einen austauschbaren Raum-Pool (der Generator soll ja zur Laufzeit einen beliebigen kompatiblen Raum wählen, nicht einen fest vorgegebenen). Die Tür-Namenskonvention (Himmelsrichtungen, `"north"`/`"south"`/...) bleibt aber relevant und wird bewusst schon jetzt konsequent genutzt — vermutlich reicht die Richtung allein als Kompatibilitäts-Kriterium für den Pool-Mechanismus, `targetRoom`/`targetDoorName` bleiben parallel für fest verankerte Räume (z.B. Startraum) bestehen. Endgültiger Ansatz erst hier entscheiden, nicht vorher raten (siehe Weapon-Interface-Präzedenzfall).
 
 ---
 Diese Liste ist ein lebendes Dokument — Reihenfolge/Inhalt kann sich anpassen, sobald wir tiefer in einzelne Quests einsteigen.

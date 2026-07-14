@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="30" height="12" tilewidth="32" tileheight="32" infinite="0" nextlayerid="3" nextobjectid="7">
+ <tileset firstgid="1" name="tileset_placeholder" tilewidth="32" tileheight="32" tilecount="2" columns="2">
+  <image source="../tileset_placeholder.png" width="64" height="32"/>
+ </tileset>
+ <layer id="1" name="Ground" width="30" height="12">
+  <data encoding="csv">
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+</data>
+ </layer>
+ <objectgroup id="2" name="Objects">
+  <object id="1" type="EnemySpawn" x="200" y="120">
+   <point/>
+  </object>
+  <object id="2" type="EnemySpawn" x="700" y="220">
+   <point/>
+  </object>
+  <object id="3" name="south" type="Door" x="480" y="368">
+   <properties>
+    <property name="targetDoorName" value="north"/>
+    <property name="targetRoom" value="maps/testmap.tmx"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="4" name="north_west" type="Door" x="224.459" y="11.0844">
+   <properties>
+    <property name="targetDoorName" value="south_west"/>
+    <property name="targetRoom" value="maps/test01_west.tmx"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="5" name="north_east" type="Door" x="744.501" y="6.46589">
+   <properties>
+    <property name="targetDoorName" value="south_east"/>
+    <property name="targetRoom" value="maps/test01_east.tmx"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+</map>

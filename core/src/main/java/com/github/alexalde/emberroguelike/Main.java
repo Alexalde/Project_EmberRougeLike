@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -83,6 +84,51 @@ public class Main extends ApplicationAdapter {
         gameOver = false;
     }
 
+    // Wechselt in einen anderen Raum durch eine Tür - Raum/Gegner werden komplett neu aufgebaut
+    // (wie bei startGame()), der Spieler landet an der passenden Tür im Zielraum
+    private void switchRoom(String targetRoomPath, String targetDoorName) {
+        room.dispose();
+        for (Enemy enemy : enemies) {
+            enemy.dispose();
+        }
+
+        room = new Room(targetRoomPath);
+
+        Door entryDoor = room.getDoorByName(targetDoorName);
+        player.setCenter(entryDoor.getEntryPosition());
+
+        enemies = new ArrayList<>();
+        for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
+            enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
+        }
+    }
+
+    // Kamera folgt dem Spieler, geklammert an die Raumgrenzen - ist der Raum in einer
+    // Dimension kleiner/gleich dem Bildschirm, wird stattdessen auf die Raummitte zentriert
+    // (sonst wäre der Klammer-Bereich ungültig: obere Grenze kleiner als untere)
+    private void updateCamera() {
+        Vector2 playerCenter = player.getCenter();
+        float halfViewWidth = GameConfig.WORLD_WIDTH / 2f;
+        float halfViewHeight = GameConfig.WORLD_HEIGHT / 2f;
+
+        float camX;
+        if (room.getPixelWidth() <= GameConfig.WORLD_WIDTH) {
+            camX = room.getPixelWidth() / 2f;
+        } else {
+            camX = MathUtils.clamp(playerCenter.x, halfViewWidth, room.getPixelWidth() - halfViewWidth);
+        }
+
+        float camY;
+        if (room.getPixelHeight() <= GameConfig.WORLD_HEIGHT) {
+            camY = room.getPixelHeight() / 2f;
+        } else {
+            camY = MathUtils.clamp(playerCenter.y, halfViewHeight, room.getPixelHeight() - halfViewHeight);
+        }
+
+        camera.position.set(camX, camY, 0);
+        camera.update();
+    }
+
     // Größtmöglicher GANZZAHLIGER Skalierungsfaktor, der noch aufs Fenster passt - Rest wird
     // als schwarzer Rand (Letterboxing) aufgefüllt, damit jedes Pixel gleichmäßig groß bleibt
     private void updateViewport(int screenWidth, int screenHeight) {
@@ -118,7 +164,7 @@ public class Main extends ApplicationAdapter {
 
         // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
         if (!gameOver) {
-            player.update(deltaTime, enemies, mouseWorldPosition);
+            player.update(deltaTime, enemies, mouseWorldPosition, room.getPixelWidth(), room.getPixelHeight());
 
             for (Enemy enemy : enemies) {
                 enemy.update(deltaTime, player);
@@ -134,8 +180,15 @@ public class Main extends ApplicationAdapter {
             }
             enemies.removeIf(enemy -> !enemy.isAlive());
 
-            // Tür bleibt verriegelt, solange noch Gegner übrig sind
-            room.getDoor().setLocked(!enemies.isEmpty());
+            // Türen bleiben verriegelt, solange noch Gegner übrig sind
+            for (Door door : room.getDoors()) {
+                door.setLocked(!enemies.isEmpty());
+
+                if (door.isPlayerInRange(player.getCenter())) {
+                    switchRoom(door.getTargetRoom(), door.getTargetDoorName());
+                    break; // "room"/"enemies" zeigen jetzt auf den neuen Raum - alte Türen-Liste nicht weiter durchgehen
+                }
+            }
 
             if (!player.isAlive()) {
                 gameOver = true;
@@ -144,6 +197,8 @@ public class Main extends ApplicationAdapter {
         } else if (Gdx.input.isKeyJustPressed(GameSettings.restartKey)) {
             startGame();
         }
+
+        updateCamera();
 
         // 2. Bildschirm leeren
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
@@ -158,7 +213,9 @@ public class Main extends ApplicationAdapter {
         // später bewegt (siehe Diskussion zu größeren, scrollenden Räumen)
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        room.getDoor().draw(batch);
+        for (Door door : room.getDoors()) {
+            door.draw(batch);
+        }
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
         for (Enemy enemy : enemies) {
             enemy.draw(batch);
