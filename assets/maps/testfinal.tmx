@@ -26,23 +26,16 @@
   <object id="2" type="EnemySpawn" x="700" y="220">
    <point/>
   </object>
-  <object id="3" name="south" type="Door" x="480" y="368">
+  <object id="4" name="south_west" type="Door" x="242.009" y="380.564">
    <properties>
-    <property name="targetDoorName" value="north"/>
-    <property name="targetRoom" value="maps/testmap.tmx"/>
-   </properties>
-   <point/>
-  </object>
-  <object id="4" name="north_west" type="Door" x="224.459" y="11.0844">
-   <properties>
-    <property name="targetDoorName" value="south_west"/>
+    <property name="targetDoorName" value="north_west"/>
     <property name="targetRoom" value="maps/test01_west.tmx"/>
    </properties>
    <point/>
   </object>
-  <object id="5" name="north_east" type="Door" x="744.501" y="6.46589">
+  <object id="5" name="south_east" type="Door" x="752.814" y="377.793">
    <properties>
-    <property name="targetDoorName" value="south_east"/>
+    <property name="targetDoorName" value="north_east"/>
     <property name="targetRoom" value="maps/test01_east.tmx"/>
    </properties>
    <point/>
