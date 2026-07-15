@@ -22,6 +22,12 @@ public class Main extends ApplicationAdapter {
     private ShapeRenderer shapeRenderer;
     private OrthographicCamera camera;
 
+    // Bildschirmfeste Kamera fürs UI (Healthbar etc.) - anders als "camera" wird ihre Position
+    // NIE verändert (siehe updateCamera()), damit UI-Elemente beim Scrollen der Welt-Kamera
+    // an derselben Bildschirmposition bleiben
+    private OrthographicCamera uiCamera;
+    private Healthbar healthbar;
+
     // Der tatsächliche, ganzzahlig skalierte und zentrierte Bildausschnitt auf dem echten Fenster
     private int viewportX, viewportY, viewportWidth, viewportHeight;
 
@@ -43,6 +49,11 @@ public class Main extends ApplicationAdapter {
         camera.setToOrtho(false, GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
+
+        uiCamera = new OrthographicCamera();
+        uiCamera.setToOrtho(false, GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
+        uiCamera.update();
+        healthbar = new Healthbar();
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -230,6 +241,13 @@ public class Main extends ApplicationAdapter {
 
         batch.end();
 
+        // Bildschirmfeste UI (Healthbar) - eigener Zeichen-Durchgang mit uiCamera statt camera,
+        // damit sie beim Scrollen der Welt-Kamera an derselben Bildschirmposition bleibt
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+        healthbar.draw(batch, player);
+        batch.end();
+
         // Debug: exakte Hitbox-Form, umschaltbar über DebugSettings.renderHitboxes
         if (DebugSettings.renderHitboxes) {
             // ShapeRenderer hat eine EIGENE Projektionsmatrix, unabhängig vom SpriteBatch -
@@ -254,5 +272,6 @@ public class Main extends ApplicationAdapter {
             enemy.dispose();
         }
         mouseDebugTexture.dispose();
+        healthbar.dispose();
     }
 }
