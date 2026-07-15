@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2; // Neu importiert!
 
 import java.util.List;
@@ -189,8 +190,10 @@ public class Player {
     }
 
     public void draw(SpriteBatch batch) {
-        // Da position nun ein Vector2 ist, nutzen wir position.x und position.y
-        batch.draw(texture, position.x, position.y);
+        // Zeichenposition aufs nächste logische Pixel runden (position selbst bleibt float-genau
+        // für Bewegung/Kollision) - verhindert Wackeln/Shimmer an Sprite-Rändern beim skalierten
+        // Nearest-Neighbor-Rendering
+        batch.draw(texture, MathUtils.round(position.x), MathUtils.round(position.y));
         bow.draw(batch);
     }
 

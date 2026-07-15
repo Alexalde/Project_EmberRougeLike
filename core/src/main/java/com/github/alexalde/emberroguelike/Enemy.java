@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 public class Enemy {
@@ -133,7 +134,8 @@ public class Enemy {
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(texture, position.x, position.y);
+        // Pixel-Snapping wie bei Player.draw() - siehe dortiger Kommentar
+        batch.draw(texture, MathUtils.round(position.x), MathUtils.round(position.y));
     }
 
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
