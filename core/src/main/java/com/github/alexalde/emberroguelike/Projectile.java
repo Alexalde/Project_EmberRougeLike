@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.List;
@@ -64,9 +65,15 @@ public class Projectile {
         // damit die Rotation die tatsächliche Flugrichtung trifft
         float rotation = direction.angleDeg() - 90f;
 
+        // Pixel-Snapping wie bei Player.draw() - siehe dortiger Kommentar. Position wird VOR dem
+        // Abzug des halben Texturmaßes gerundet, sonst könnte krummes Runden den Mittelpunkt
+        // (das Rotationszentrum) minimal verschieben
+        float drawX = MathUtils.round(position.x);
+        float drawY = MathUtils.round(position.y);
+
         batch.draw(
             texture,
-            position.x - texture.getWidth() / 2f, position.y - texture.getHeight() / 2f,
+            drawX - texture.getWidth() / 2f, drawY - texture.getHeight() / 2f,
             texture.getWidth() / 2f, texture.getHeight() / 2f,
             texture.getWidth(), texture.getHeight(),
             1f, 1f,

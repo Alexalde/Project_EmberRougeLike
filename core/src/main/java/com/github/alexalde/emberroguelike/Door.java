@@ -3,6 +3,7 @@ package com.github.alexalde.emberroguelike;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 public class Door {
@@ -79,7 +80,12 @@ public class Door {
     public void draw(SpriteBatch batch) {
         // Weiße Platzhalter-Textur eingefärbt statt zwei separater Grafiken für offen/zu
         batch.setColor(locked ? Color.RED : Color.GREEN);
-        batch.draw(texture, position.x - texture.getWidth() / 2f, position.y - texture.getHeight() / 2f);
+        // Pixel-Snapping wie bei Player.draw() - siehe dortiger Kommentar
+        batch.draw(
+            texture,
+            MathUtils.round(position.x - texture.getWidth() / 2f),
+            MathUtils.round(position.y - texture.getHeight() / 2f)
+        );
         batch.setColor(Color.WHITE); // zurücksetzen, sonst würde alles Danach-Gezeichnete mitgefärbt
     }
 
