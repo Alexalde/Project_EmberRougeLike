@@ -51,6 +51,11 @@ Status: In Erarbeitung, wird Schritt für Schritt gemeinsam ausgebaut.
 - **Eigene Pixelart (dedizierter Art-Pass):** Kommt erst, **nachdem der Kern-Gameplay-Loop steht** (grob nach Quest 6 "Pfad durch mehrere Räume", siehe `ROADMAP.md`). Begründung: Vorher ändern sich Waffen-Movesets, Dash-Timing und Animationslängen noch häufig — fertige Sprites/Animationen davor zu bauen bedeutet oft doppelte Arbeit bei späteren Anpassungen.
 - **Werkzeug:** LibreSprite (Aseprite-Fork), Entscheidung vom 2026-07-13 — gezielter für Pixelart als Photoshop (Onion-Skinning, Palette-Verwaltung, Sprite-Sheet-Export).
 - **Animationsgeschwindigkeit an Stats koppeln (Konzept für Quest 7):** Statt Sprite-Animationen mit einer festen `frameDuration` an Echtzeit zu binden, Frame-Auswahl über einen **Fortschritts-Anteil** steuern: `progress = 1f - (zeitRemaining / gesamtDauer)`, dann `frameIndex = (int)(progress * frameCount)`. Da Stats wie `attackVisualDuration`/`attackCooldownDuration` bereits veränderliche Instanzfelder sind (siehe Abschnitt 2), synchronisiert sich die Animationslänge dadurch automatisch mit einem späteren `attackSpeed`-Stat, ohne einen separaten "Animationsgeschwindigkeit"-Parameter einführen zu müssen. Bereits so vorbereitet in `Sword` (`attackVisualTimeRemaining`/`attackVisualDuration`), auch wenn es noch keine echte Sprite-Animation gibt.
+- **Quest-7-Scope-Entscheidung (vermerkt 2026-07-15): Tiefe statt Breite.** Bewusst wenige Dinge bekommen Kunst, aber die dahinterliegenden Systeme sollen bereits strukturell so funktionieren wie in der finalen Version (auch wenn die Pixelart selbst noch nicht final ist):
+  - Nur **Spieler + 1 Enemy-Typ** bekommen echte State-Animationen (Idle/Walk/Attack/Hurt/Death, wenige Frames), verdrahtet über das Progress-basierte Animationssystem oben.
+  - Nur **1 Bodenset mit Dual-Grid** (Boden + eine "Lücken"-Variante wie Wasser/Löcher als zweites Terrain, alle 16 Kombinationen) plus **einfache, nicht-autogekachelte Wände**.
+  - **UI-Grundgerüst (Healthbar etc.) wird ebenfalls schon gepixelt** (verfeinerter Platzhalter, nicht final) — früh sichtbar/relevant genug, um nicht bis zu einem späteren Art-Pass zu warten.
+  - Waffen/Projektile/Türen bleiben bewusst unverändert als reine Platzhalter, kommen in einem späteren Art-Pass.
 
 ## 6. Scope-Abgrenzung & Non-Goals
 
