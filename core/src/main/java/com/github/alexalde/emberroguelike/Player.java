@@ -179,6 +179,14 @@ public class Player {
         return health > 0;
     }
 
+    public float getHealth() {
+        return health;
+    }
+
+    public float getMaxHealth() {
+        return maxHealth;
+    }
+
     public Vector2 getCenter() {
         return new Vector2(position.x + texture.getWidth() / 2f, position.y + texture.getHeight() / 2f);
     }
