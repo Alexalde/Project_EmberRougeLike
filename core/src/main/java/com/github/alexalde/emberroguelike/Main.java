@@ -185,19 +185,23 @@ public class Main extends ApplicationAdapter {
                 enemy.update(deltaTime, player);
             }
 
-            // Tote Gegner entfernen: erst Texturen aufräumen (sonst Speicherleck), dann erst aus
+            // Entfernbare Gegner entfernen (tot UND Sterbeanimation fertig, siehe
+            // Enemy.isRemovable()): erst Texturen aufräumen (sonst Speicherleck), dann erst aus
             // der Liste löschen (siehe ConcurrentModificationException-Thema von neulich - deshalb
             // zwei getrennte Schritte statt Aufräumen mitten in der removeIf-Bedingung)
             for (Enemy enemy : enemies) {
-                if (!enemy.isAlive()) {
+                if (enemy.isRemovable()) {
                     enemy.dispose();
                 }
             }
-            enemies.removeIf(enemy -> !enemy.isAlive());
+            enemies.removeIf(Enemy::isRemovable);
 
-            // Türen bleiben verriegelt, solange noch Gegner übrig sind
+            // Türen bleiben verriegelt, solange noch Gegner LEBEN - bewusst NICHT
+            // enemies.isEmpty(), sonst würde eine Leiche, die noch ihre Sterbeanimation
+            // abspielt, die Tür unnötig verriegelt halten
+            boolean anyEnemyAlive = enemies.stream().anyMatch(Enemy::isAlive);
             for (Door door : room.getDoors()) {
-                door.setLocked(!enemies.isEmpty());
+                door.setLocked(anyEnemyAlive);
 
                 if (door.isPlayerInRange(player.getCenter())) {
                     switchRoom(door.getTargetRoom(), door.getTargetDoorName());
