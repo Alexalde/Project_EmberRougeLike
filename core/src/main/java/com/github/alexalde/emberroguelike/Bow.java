@@ -21,6 +21,12 @@ public class Bow implements Weapon {
     private Texture projectileTexture;
     private List<Projectile> activeProjectiles;
 
+    // Bow hat kein eigenes Angriffs-Sichtbarkeitsbedürfnis wie Sword (keine Debug-Hitbox-Anzeige)
+    // - diese beiden Felder existieren nur, damit Player die Attack-Animation auch beim Bogen
+    // auslösen kann (siehe Weapon-Interface)
+    private float attackVisualDuration;
+    private float attackVisualTimeRemaining;
+
     public Bow() {
         this.attackCooldownDuration = 0.5f;
         this.attackCooldownRemaining = 0f;
@@ -28,6 +34,7 @@ public class Bow implements Weapon {
         this.projectileSpeed = 250f;
         this.maxRange = 300f;
         this.hitsPerProjectile = 1;
+        this.attackVisualDuration = 0.15f;
 
         this.projectileTexture = new Texture("arrow_placeholder.png");
         // An die Breite der Platzhalter-Textur gekoppelt, damit die Hitbox zur Grafik passt
@@ -40,6 +47,9 @@ public class Bow implements Weapon {
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime;
         }
+        if (attackVisualTimeRemaining > 0) {
+            attackVisualTimeRemaining -= deltaTime;
+        }
 
         for (Projectile projectile : activeProjectiles) {
             projectile.update(deltaTime, targets);
@@ -48,9 +58,20 @@ public class Bow implements Weapon {
     }
 
     private void fire(Vector2 origin, Vector2 direction) {
+        attackVisualTimeRemaining = attackVisualDuration;
         activeProjectiles.add(
             new Projectile(origin, direction, projectileSpeed, damage, maxRange, hitsPerProjectile, projectileHitboxRadius, projectileTexture)
         );
+    }
+
+    @Override
+    public boolean isAttackVisualActive() {
+        return attackVisualTimeRemaining > 0;
+    }
+
+    @Override
+    public float getAttackVisualProgress() {
+        return 1f - (attackVisualTimeRemaining / attackVisualDuration);
     }
 
     // "targets" wird hier (noch) nicht direkt benutzt, gehört aber zur Signatur des Weapon-Interfaces
