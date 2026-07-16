@@ -36,6 +36,12 @@ public class Player {
     // Bleibt bei reiner Vertikalbewegung/Stillstand erhalten (siehe updateFacing()) - kein Reset
     // pro Frame wie bei "direction", sonst würde der Charakter beim Stehenbleiben "zurückschauen"
     private boolean facingLeft;
+    // Analog zu facingLeft, aber für IDLE/WALK nach Norden vs. Süden - deckt zusammen mit der
+    // horizontalen Spiegelung alle 8 Bewegungsrichtungen mit nur 2 gezeichneten Varianten ab
+    // (Süden inkl. Ost/West/Südost/Südwest, Norden inkl. Nordost/Nordwest)
+    private boolean facingUp;
+    private Animation idleUpAnimation;
+    private Animation walkUpAnimation;
     // Countdown-Timer wie bei Sword.attackVisualTimeRemaining - werden in takeDamage() gesetzt,
     // ticken in updateAnimation() (nicht update()!) herunter, siehe dortiger Kommentar
     private float hurtTimeRemaining;
@@ -71,10 +77,10 @@ public class Player {
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
 
-        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2, Hurt 1, Death 3 (unterschiedlich
-        // hell/farbig, damit der Frame-Wechsel sichtbar ist) - echte Pixelart ersetzt das
-        // später (Quest 7.10). Death durchläuft bewusst 3 statt 2 Frames (Treffer -> Fallen ->
-        // Ruhen), auch als reiner Platzhalter schon klar lesbar.
+        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2, Hurt 1, Death 3, plus Idle-Norden 1 und
+        // Walk-Norden 2 (unterschiedlich hell/farbig, damit der Frame-Wechsel sichtbar ist) -
+        // echte Pixelart ersetzt das später (Quest 7.10). Death durchläuft bewusst 3 statt 2
+        // Frames (Treffer -> Fallen -> Ruhen), auch als reiner Platzhalter schon klar lesbar.
         this.animationTextures = new Texture[] {
             createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
             createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
@@ -84,7 +90,10 @@ public class Player {
             createFrameTexture(new Color(1f, 0.2f, 0.2f, 1f)),
             createFrameTexture(new Color(0.8f, 0.1f, 0.1f, 1f)),
             createFrameTexture(new Color(0.5f, 0.15f, 0.15f, 1f)),
-            createFrameTexture(new Color(0.25f, 0.25f, 0.25f, 1f))
+            createFrameTexture(new Color(0.25f, 0.25f, 0.25f, 1f)),
+            createFrameTexture(new Color(0.3f, 0.1f, 0.6f, 1f)),
+            createFrameTexture(new Color(0.3f, 0.1f, 0.6f, 1f)),
+            createFrameTexture(new Color(0.6f, 0.4f, 0.9f, 1f))
         };
         this.animations = new EnumMap<>(AnimationState.class);
         animations.put(AnimationState.IDLE, new Animation(new TextureRegion[] {
@@ -106,6 +115,13 @@ public class Player {
             new TextureRegion(animationTextures[7]),
             new TextureRegion(animationTextures[8])
         }));
+        this.idleUpAnimation = new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[9])
+        });
+        this.walkUpAnimation = new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[10]),
+            new TextureRegion(animationTextures[11])
+        });
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
 
@@ -286,13 +302,20 @@ public class Player {
         currentAnimationState = newState;
     }
 
-    // Nur bei tatsächlicher horizontaler Eingabe aktualisieren - bei reiner Vertikalbewegung
-    // (direction.x == 0) bleibt die zuletzt bekannte Blickrichtung erhalten (siehe facingLeft)
+    // Nur bei tatsächlicher Eingabe auf der jeweiligen Achse aktualisieren - bei reiner
+    // Bewegung auf der anderen Achse (oder Stillstand) bleibt die zuletzt bekannte
+    // Blickrichtung erhalten (siehe facingLeft/facingUp)
     private void updateFacing() {
         if (direction.x < 0) {
             facingLeft = true;
         } else if (direction.x > 0) {
             facingLeft = false;
+        }
+
+        if (direction.y > 0) {
+            facingUp = true;
+        } else if (direction.y < 0) {
+            facingUp = false;
         }
     }
 
@@ -344,6 +367,19 @@ public class Player {
         return 0f;
     }
 
+    // TODO: Bei facingUp UND currentAnimationState IDLE bzw. WALK die jeweilige "*Up"-Variante
+    // zurückgeben (idleUpAnimation/walkUpAnimation) statt des Eintrags aus "animations" - ATTACK/
+    // HURT/DEATH haben keine Norden-Variante, dafür also immer animations.get(currentAnimationState).
+    private Animation getCurrentAnimation() {
+        if (facingUp && currentAnimationState == AnimationState.IDLE){
+            return idleUpAnimation;
+        }
+        if (facingUp && currentAnimationState == AnimationState.WALK) {
+            return walkUpAnimation;
+        }
+        return animations.get(currentAnimationState);
+    }
+
     private Texture createFrameTexture(Color color) {
         Pixmap pixmap = new Pixmap(SPRITE_WIDTH, SPRITE_HEIGHT, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
@@ -357,7 +393,7 @@ public class Player {
         // Zeichenposition aufs nächste logische Pixel runden (position selbst bleibt float-genau
         // für Bewegung/Kollision) - verhindert Wackeln/Shimmer an Sprite-Rändern beim skalierten
         // Nearest-Neighbor-Rendering
-        TextureRegion frame = animations.get(currentAnimationState).getFrame(getAnimationProgress());
+        TextureRegion frame = getCurrentAnimation().getFrame(getAnimationProgress());
         float drawX = MathUtils.round(position.x);
         float drawY = MathUtils.round(position.y);
 
