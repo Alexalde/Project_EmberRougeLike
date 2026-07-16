@@ -1,4 +1,4 @@
-# Kunst-Spezifikation für Quest 7.10 (LibreSprite)
+# Kunst-Spezifikation für Quest 7.10 (Aseprite)
 
 Technische Vorgaben für den echten Kunst-Tausch in Quest 7 — die Systeme (Animation, Dual-Grid) sind bereits fertig und funktionieren mit Platzhaltern (Quest 7.3–7.9). Diese Datei legt genau fest, was gezeichnet werden muss, in welcher Auflösung und Anordnung, damit die fertigen Dateien am selben Asset-Pfad die Platzhalter ersetzen können (siehe GDD 5, Platzhalter-Ansatz).
 
