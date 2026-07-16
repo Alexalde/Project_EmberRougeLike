@@ -39,6 +39,10 @@ public class Main extends ApplicationAdapter {
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
 
+    // TEMPORÄR für Quest 7.8 (Dual-Grid-Prototyp) - isoliert getestet, noch nicht an Room
+    // angebunden; wird in Quest 7.9 durch die echte Room-Integration ersetzt/entfernt
+    private DualGridTerrainRenderer dualGridPrototype;
+
     @Override
     public void create() {
         batch = new SpriteBatch();
@@ -64,6 +68,21 @@ public class Main extends ApplicationAdapter {
         pixmap.fill();
         mouseDebugTexture = new Texture(pixmap);
         pixmap.dispose();
+
+        // TEMPORÄR für Quest 7.8 - kleiner "Teich" (Lücken-Block umgeben von Boden), deckt
+        // absichtlich mehrere der 16 Kombinationen ab (gerade Kanten UND Außenecken)
+        dualGridPrototype = new DualGridTerrainRenderer(createTestTerrainGrid());
+    }
+
+    // TEMPORÄR für Quest 7.8 - festes Test-Gitter ganz ohne Tiled-Anbindung (kommt erst Quest 7.9)
+    private boolean[][] createTestTerrainGrid() {
+        boolean[][] grid = new boolean[8][6];
+        for (int x = 2; x <= 4; x++) {
+            for (int y = 2; y <= 3; y++) {
+                grid[x][y] = true;
+            }
+        }
+        return grid;
     }
 
     // Baut Raum/Spieler/Gegner komplett neu auf - beim allerersten Start UND bei jedem Neustart
@@ -232,6 +251,10 @@ public class Main extends ApplicationAdapter {
         // später bewegt (siehe Diskussion zu größeren, scrollenden Räumen)
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+
+        // TEMPORÄR für Quest 7.8 - siehe Kommentar beim Feld weiter oben
+        dualGridPrototype.render(batch);
+
         for (Door door : room.getDoors()) {
             door.draw(batch);
         }
@@ -268,6 +291,16 @@ public class Main extends ApplicationAdapter {
             }
             shapeRenderer.end();
         }
+
+        // Debug: Kachel-Gitter des Dual-Grid-Prototyps (Quest 7.8), umschaltbar über
+        // DebugSettings.renderTerrainDebug - eigener begin()/end()-Durchgang mit ShapeType.Line,
+        // lässt sich nicht mit dem Filled-Durchgang oben mischen
+        if (DebugSettings.renderTerrainDebug) {
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            dualGridPrototype.renderDebugGrid(shapeRenderer);
+            shapeRenderer.end();
+        }
     }
 
     @Override
@@ -281,5 +314,6 @@ public class Main extends ApplicationAdapter {
         }
         mouseDebugTexture.dispose();
         healthbar.dispose();
+        dualGridPrototype.dispose();
     }
 }
