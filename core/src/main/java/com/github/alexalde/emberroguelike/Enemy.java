@@ -35,6 +35,13 @@ public class Enemy {
     private float attackVisualDuration;
     private float attackVisualTimeRemaining;
 
+    // Countdown-Timer wie bei Player - werden in takeDamage() gesetzt, ticken in
+    // updateAnimationTimers() herunter (siehe update())
+    private float hurtTimeRemaining;
+    private float deathTimeRemaining;
+    private static final float HURT_ANIMATION_DURATION = 0.2f;
+    private static final float DEATH_ANIMATION_DURATION = 0.6f;
+
     private enum EnemyState {
         CHASING,
         ATTACKING
@@ -54,14 +61,19 @@ public class Enemy {
         this.position = new Vector2(startX, startY);
         this.health = 20;
 
-        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2 - andere Farbtöne als Player, damit beide
-        // im Spiel unterscheidbar bleiben. Echte Pixelart ersetzt das später (Quest 7.10)
+        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2, Hurt 1, Death 3 - andere Farbtöne als
+        // Player, damit beide im Spiel unterscheidbar bleiben. Echte Pixelart ersetzt das
+        // später (Quest 7.10)
         this.animationTextures = new Texture[] {
             createFrameTexture(new Color(0.6f, 0.2f, 0.2f, 1f)),
             createFrameTexture(new Color(0.6f, 0.2f, 0.2f, 1f)),
             createFrameTexture(new Color(0.8f, 0.35f, 0.2f, 1f)),
             createFrameTexture(new Color(0.9f, 0.5f, 0.1f, 1f)),
-            createFrameTexture(new Color(1f, 0.7f, 0.2f, 1f))
+            createFrameTexture(new Color(1f, 0.7f, 0.2f, 1f)),
+            createFrameTexture(new Color(1f, 0.9f, 0.3f, 1f)),
+            createFrameTexture(new Color(0.4f, 0.05f, 0.05f, 1f)),
+            createFrameTexture(new Color(0.25f, 0.05f, 0.05f, 1f)),
+            createFrameTexture(new Color(0.15f, 0.15f, 0.15f, 1f))
         };
         this.animations = new EnumMap<>(AnimationState.class);
         animations.put(AnimationState.IDLE, new Animation(new TextureRegion[] {
@@ -75,7 +87,14 @@ public class Enemy {
             new TextureRegion(animationTextures[3]),
             new TextureRegion(animationTextures[4])
         }));
-        // HURT/DEATH kommen erst in Quest 7.7 dazu
+        animations.put(AnimationState.HURT, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[5])
+        }));
+        animations.put(AnimationState.DEATH, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[6]),
+            new TextureRegion(animationTextures[7]),
+            new TextureRegion(animationTextures[8])
+        }));
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
         this.attackVisualDuration = 0.15f;
@@ -90,15 +109,14 @@ public class Enemy {
     }
 
     public void update(float deltaTime, Player player) {
+        // Läuft IMMER, auch nach dem Tod - sonst würde die Death-Animation nie über Frame 0
+        // hinauskommen (analog zu Player.updateAnimation(), siehe dortiger Kommentar). Erst
+        // DANACH darf die KI/Bewegungslogik unten früh aussteigen.
+        updateAnimationTimers(deltaTime);
+
         if (!isAlive()) {
             return;
         }
-
-        if (attackVisualTimeRemaining > 0) {
-            attackVisualTimeRemaining -= deltaTime;
-        }
-        animationTime += deltaTime;
-        currentAnimationState = determineAnimationState();
 
         Vector2 myCenter = getCenter();
         Vector2 playerCenter = player.getCenter();
@@ -148,6 +166,11 @@ public class Enemy {
     public void takeDamage(int amount){
         this.health = this.health - amount;
 
+        hurtTimeRemaining = HURT_ANIMATION_DURATION;
+        if (!isAlive()) {
+            deathTimeRemaining = DEATH_ANIMATION_DURATION;
+        }
+
         if (DebugSettings.logDamage) {
             System.out.println("Enemy getroffen! Schaden: " + amount + ", verbleibendes Leben: " + health);
         }
@@ -157,14 +180,43 @@ public class Enemy {
         return health > 0;
     }
 
+    // Kapselt "tot UND Sterbeanimation fertig" - Main entfernt/disposed den Gegner erst dann,
+    // statt ihn im selben Frame zu entfernen, in dem er stirbt (siehe Main.render())
+    public boolean isRemovable() {
+        return !isAlive() && deathTimeRemaining <= 0;
+    }
+
     private Vector2 getCenter() {
         return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
     }
 
-    // Prioritätsreihenfolge ATTACK > WALK > IDLE. Fällt beides nicht zu (state == ATTACKING,
-    // aber gerade zwischen zwei Treffern im Cooldown), bleibt als einziger verbleibender Fall
-    // IDLE übrig - kein extra "wartet"-Zustand nötig.
+    private void updateAnimationTimers(float deltaTime) {
+        if (attackVisualTimeRemaining > 0) {
+            attackVisualTimeRemaining -= deltaTime;
+        }
+        if (hurtTimeRemaining > 0) {
+            hurtTimeRemaining -= deltaTime;
+        }
+        if (deathTimeRemaining > 0) {
+            deathTimeRemaining -= deltaTime;
+        }
+        animationTime += deltaTime;
+        currentAnimationState = determineAnimationState();
+    }
+
+    // Prioritätsreihenfolge DEATH > HURT > ATTACK > WALK > IDLE. DEATH prüft bewusst
+    // "!isAlive()" statt des ablaufenden deathTimeRemaining-Timers, damit die Animation
+    // dauerhaft auf DEATH stehen bleibt (siehe Player.determineAnimationState()).
+    // Fällt weder ATTACK noch WALK zu (state == ATTACKING, aber gerade zwischen zwei Treffern
+    // im Cooldown), bleibt als einziger verbleibender Fall IDLE übrig - kein extra
+    // "wartet"-Zustand nötig.
     private AnimationState determineAnimationState() {
+        if (!isAlive()) {
+            return AnimationState.DEATH;
+        }
+        if (hurtTimeRemaining > 0) {
+            return AnimationState.HURT;
+        }
         if (attackVisualTimeRemaining > 0) {
             return AnimationState.ATTACK;
         }
@@ -174,14 +226,21 @@ public class Enemy {
         return AnimationState.IDLE;
     }
 
-    // Fortschritts-Anteil - dieselben zwei Formeln wie bei Player (WALK: looping über
-    // animationTime, ATTACK: Countdown-Fortschritt), nur auf Enemys eigene Felder angewendet
+    // Fortschritts-Anteil - dieselben Formeln wie bei Player (WALK: looping über
+    // animationTime, ATTACK/HURT/DEATH: Countdown-Fortschritt), nur auf Enemys eigene Felder
+    // angewendet
     private float getAnimationProgress() {
         if (currentAnimationState == AnimationState.WALK) {
             return (animationTime % WALK_ANIMATION_DURATION) / WALK_ANIMATION_DURATION;
         }
         if (currentAnimationState == AnimationState.ATTACK) {
             return 1f - (attackVisualTimeRemaining / attackVisualDuration);
+        }
+        if (currentAnimationState == AnimationState.HURT) {
+            return 1f - (hurtTimeRemaining / HURT_ANIMATION_DURATION);
+        }
+        if (currentAnimationState == AnimationState.DEATH) {
+            return 1f - (deathTimeRemaining / DEATH_ANIMATION_DURATION);
         }
         return 0f;
     }
