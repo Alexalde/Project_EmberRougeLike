@@ -68,6 +68,17 @@ public class Sword implements Weapon {
         return false;
     }
 
+    @Override
+    public boolean isAttackVisualActive() {
+        return attackVisualTimeRemaining > 0;
+    }
+
+    // Fortschritts-Anteil nach der GDD-5.3-Formel: 0 = Angriff hat gerade erst begonnen, 1 = fertig
+    @Override
+    public float getAttackVisualProgress() {
+        return 1 - (attackVisualTimeRemaining / attackVisualDuration);
+    }
+
     public void drawHitboxDebug(ShapeRenderer shapeRenderer, Vector2 origin) {
         if (attackVisualTimeRemaining > 0) {
             float facingAngle = lastAttackDirection.angleDeg();
