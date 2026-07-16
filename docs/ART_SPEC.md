@@ -5,26 +5,30 @@ Technische Vorgaben für den echten Kunst-Tausch in Quest 7 — die Systeme (Ani
 ## Grundraster
 
 - **Alle Frames: 32×32 Pixel**, passend zur festen `SPRITE_WIDTH`/`SPRITE_HEIGHT`-Konvention im Code.
-- **Nur eine Blickrichtung nötig** (nach rechts schauend empfohlen) — horizontale Spiegelung für "nach links" passiert bereits automatisch im Code (`Player.draw()`, seit Quest 7.3). Kein doppelter Zeichenaufwand für Links/Rechts.
+- **Nur eine Blickrichtung pro Zeile nötig** (nach rechts schauend empfohlen) — horizontale Spiegelung für "nach links" passiert bereits automatisch im Code (`Player.draw()`, seit Quest 7.3). Kein doppelter Zeichenaufwand für Links/Rechts.
 - Export als PNG mit Alpha-Kanal (transparenter Hintergrund außerhalb der Figur).
 
 ## 1. Spieler-Sprite-Sheet (`player_spritesheet.png`)
 
-Ein Sprite-Sheet, **5 Zeilen × 3 Spalten**, jede Zelle 32×32px → Gesamtgröße **96×160px**.
+Ein Sprite-Sheet, **7 Zeilen × 3 Spalten**, jede Zelle 32×32px → Gesamtgröße **96×224px**.
+
+Der Spieler hat für Idle/Walk zwei Blickrichtungs-Varianten (Süden/Norden, seit Quest 7.10-Vorbereitung 2026-07-16): Süden deckt zusammen mit der horizontalen Spiegelung Ost/Südost/Süd/Südwest/West ab, Norden deckt Nordost/Nord/Nordwest ab. Attack/Hurt/Death bleiben bei nur einer Variante (kein Richtungs-Wechsel für diese Zustände im aktuellen Scope).
 
 | Zeile | Zustand | Frames | Genutzte Spalten |
 |---|---|---|---|
-| 0 (oben) | Idle | 1 | Spalte 0, Spalten 1-2 leer/transparent lassen |
-| 1 | Walk | 2 | Spalten 0-1, Spalte 2 leer |
-| 2 | Attack | 2 | Spalten 0-1, Spalte 2 leer |
-| 3 | Hurt | 1 | Spalte 0, Spalten 1-2 leer |
-| 4 (unten) | Death | 3 | Spalten 0-2 (volle Zeile) |
+| 0 (oben) | Idle (Süden) | 1 | Spalte 0, Spalten 1-2 leer/transparent lassen |
+| 1 | Idle (Norden) | 1 | Spalte 0, Spalten 1-2 leer |
+| 2 | Walk (Süden) | 2 | Spalten 0-1, Spalte 2 leer |
+| 3 | Walk (Norden) | 2 | Spalten 0-1, Spalte 2 leer |
+| 4 | Attack | 2 | Spalten 0-1, Spalte 2 leer |
+| 5 | Hurt | 1 | Spalte 0, Spalten 1-2 leer |
+| 6 (unten) | Death | 3 | Spalten 0-2 (volle Zeile) |
 
 Zeilenreihenfolge ist wichtig — sie muss zur Lade-Reihenfolge im Code passen (`TextureRegion.split()` liest zeilenweise von oben).
 
 ## 2. Gegner-Sprite-Sheet (`enemy_spritesheet.png`)
 
-Exakt dasselbe Layout wie beim Spieler (5×3 Zeilen/Spalten, 96×160px, gleiche Zustands-Reihenfolge) — nur der 1 aktuell umgesetzte Gegner-Typ, eigener Stil/Farbgebung zur Unterscheidung vom Spieler.
+Der Gegner hat (Stand 2026-07-16) noch **keine** Norden-Variante, nur die ursprünglichen 5 Zustände — 5 Zeilen × 3 Spalten, 96×160px, gleiches Reihenfolge-Prinzip wie beim Spieler (Idle/Walk/Attack/Hurt/Death), nur der 1 aktuell umgesetzte Gegner-Typ, eigener Stil/Farbgebung zur Unterscheidung vom Spieler.
 
 ## 3. Dual-Grid-Terrain-Tileset (`terrain_dualgrid.png`)
 
