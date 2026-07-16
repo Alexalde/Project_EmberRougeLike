@@ -3,7 +3,7 @@ package com.github.alexalde.emberroguelike;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
@@ -51,7 +51,7 @@ public class DualGridTerrainRenderer {
         return isGap[clampedX][clampedY];
     }
 
-    public void render(SpriteBatch batch) {
+    public void render(Batch batch) {
         // Render-Gitter ist in jeder Achse eine Kachel GRÖSSER als das Daten-Gitter (<=, nicht <)
         // - eine Render-Kachel pro Eck-Schnittpunkt des Daten-Gitters, siehe computeMask()
         for (int rx = 0; rx <= gridWidth; rx++) {
