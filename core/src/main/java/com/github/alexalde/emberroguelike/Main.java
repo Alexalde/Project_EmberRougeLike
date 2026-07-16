@@ -173,6 +173,10 @@ public class Main extends ApplicationAdapter {
         camera.unproject(mouseScreenCoords, viewportX, viewportY, viewportWidth, viewportHeight);
         Vector2 mouseWorldPosition = new Vector2(mouseScreenCoords.x, mouseScreenCoords.y);
 
+        // Läuft IMMER, auch nach Game Over (siehe Player.updateAnimation()) - sonst würde z.B.
+        // die spätere Death-Animation beim Einfrieren der restlichen Logik sofort mit einfrieren
+        player.updateAnimation(deltaTime);
+
         // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
         if (!gameOver) {
             player.update(deltaTime, enemies, mouseWorldPosition, room.getPixelWidth(), room.getPixelHeight());
