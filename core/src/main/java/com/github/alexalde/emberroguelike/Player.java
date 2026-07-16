@@ -1,12 +1,16 @@
 package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2; // Neu importiert!
 
+import java.util.EnumMap;
 import java.util.List;
 
 public class Player {
@@ -15,7 +19,24 @@ public class Player {
     private Vector2 direction; // Speichert die reine Richtung (-1, 0, 1)
 
     private float speed;
-    private Texture texture;
+
+    // Alle Animations-Frames haben dieselbe feste Pixelgröße - es gibt keine einzelne "die"
+    // Textur mehr, von der man Breite/Höhe abfragen könnte (siehe animationTextures unten)
+    private static final int SPRITE_WIDTH = 32;
+    private static final int SPRITE_HEIGHT = 32;
+
+    // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt
+    private Texture[] animationTextures;
+    private EnumMap<AnimationState, Animation> animations;
+    private AnimationState currentAnimationState;
+    // Frei laufender Zeit-Akkumulator für looping Animationen (Idle/Walk) - wird NIE
+    // zurückgesetzt, siehe getAnimationProgress()
+    private float animationTime;
+    private static final float WALK_ANIMATION_DURATION = 0.3f;
+    // Bleibt bei reiner Vertikalbewegung/Stillstand erhalten (siehe updateFacing()) - kein Reset
+    // pro Frame wie bei "direction", sonst würde der Charakter beim Stehenbleiben "zurückschauen"
+    private boolean facingLeft;
+
     private enum PlayerState{
         NORMAL,
         DASHING
@@ -43,7 +64,26 @@ public class Player {
         this.position = new Vector2(startX, startY);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
-        this.texture = new Texture("player_placeholder.png");
+
+        // Platzhalter-Frames: Idle 1 Frame, Walk 2 Frames (unterschiedlich hell, damit der
+        // Frame-Wechsel beim Laufen sichtbar ist) - echte Pixelart ersetzt das später (Quest 7.10)
+        this.animationTextures = new Texture[] {
+            createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
+            createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
+            createFrameTexture(new Color(0.5f, 0.7f, 1f, 1f))
+        };
+        this.animations = new EnumMap<>(AnimationState.class);
+        animations.put(AnimationState.IDLE, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[0])
+        }));
+        animations.put(AnimationState.WALK, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[1]),
+            new TextureRegion(animationTextures[2])
+        }));
+        // ATTACK/HURT/DEATH kommen erst in Quest 7.4/7.5 dazu
+        this.currentAnimationState = AnimationState.IDLE;
+        this.animationTime = 0f;
+
         this.state = PlayerState.NORMAL;
         this.sword = new Sword();
         this.bow = new Bow();
@@ -118,15 +158,15 @@ public class Player {
         // Grenzen für X (0 bis Raumbreite minus Bildbreite)
         if (position.x < 0) {
             position.x = 0;
-        } else if (position.x > roomWidth - texture.getWidth()) {
-            position.x = roomWidth - texture.getWidth();
+        } else if (position.x > roomWidth - SPRITE_WIDTH) {
+            position.x = roomWidth - SPRITE_WIDTH;
         }
 
         // Grenzen für Y (0 bis Raumhöhe minus Bildhöhe)
         if (position.y < 0) {
             position.y = 0;
-        } else if (position.y > roomHeight - texture.getHeight()) {
-            position.y = roomHeight - texture.getHeight();
+        } else if (position.y > roomHeight - SPRITE_HEIGHT) {
+            position.y = roomHeight - SPRITE_HEIGHT;
         }
 
         Vector2 center = getCenter();
@@ -188,20 +228,86 @@ public class Player {
     }
 
     public Vector2 getCenter() {
-        return new Vector2(position.x + texture.getWidth() / 2f, position.y + texture.getHeight() / 2f);
+        return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
     }
 
     // Gegenstück zu getCenter() - für Raumwechsel, wo der Spieler an einer Zielposition
     // (Zentrum, nicht Ecke) auftauchen soll
     public void setCenter(Vector2 center) {
-        this.position.set(center.x - texture.getWidth() / 2f, center.y - texture.getHeight() / 2f);
+        this.position.set(center.x - SPRITE_WIDTH / 2f, center.y - SPRITE_HEIGHT / 2f);
+    }
+
+    // Läuft UNABHÄNGIG von update() jeden Frame, auch wenn Main gerade wegen Game Over den
+    // Aufruf von update() aussetzt - sonst würde die Death-Animation beim Sterben sofort auf
+    // Frame 0 einfrieren statt durchzulaufen (siehe Main.render())
+    public void updateAnimation(float deltaTime) {
+        animationTime += deltaTime;
+        updateFacing();
+
+        AnimationState newState = determineAnimationState();
+        if (newState != currentAnimationState && DebugSettings.logAnimationState) {
+            System.out.println("Player-Animation: " + currentAnimationState + " -> " + newState);
+        }
+        currentAnimationState = newState;
+    }
+
+    // Nur bei tatsächlicher horizontaler Eingabe aktualisieren - bei reiner Vertikalbewegung
+    // (direction.x == 0) bleibt die zuletzt bekannte Blickrichtung erhalten (siehe facingLeft)
+    private void updateFacing() {
+        if (direction.x < 0) {
+            facingLeft = true;
+        } else if (direction.x > 0) {
+            facingLeft = false;
+        }
+    }
+
+    // DASHING nutzt bewusst dieselbe Walk-Animation - der Vertical Slice (siehe ROADMAP Quest 7)
+    // sieht keinen eigenen Dash-Animationszustand vor. Funktioniert "gratis": "direction" wird
+    // während des Dashs nicht zurückgesetzt und bleibt daher automatisch != 0.
+    private AnimationState determineAnimationState() {
+        if (direction.len() > 0) {
+            return AnimationState.WALK;
+        }
+        return AnimationState.IDLE;
+    }
+
+    // Fortschritts-Anteil für looping Animationen (aktuell nur WALK), aus dem frei laufenden
+    // animationTime-Akkumulator berechnet (siehe GDD 5.3): Rest der Division durch die
+    // Zyklusdauer, wieder durch die Zyklusdauer geteilt - Ergebnis liegt damit immer in [0, 1).
+    // IDLE hat nur 1 Frame, der Wert ist dort egal (getFrame() clampt ohnehin).
+    private float getAnimationProgress() {
+        if (currentAnimationState == AnimationState.WALK) {
+            return (animationTime % WALK_ANIMATION_DURATION) / WALK_ANIMATION_DURATION;
+        }
+        return 0f;
+    }
+
+    private Texture createFrameTexture(Color color) {
+        Pixmap pixmap = new Pixmap(SPRITE_WIDTH, SPRITE_HEIGHT, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fill();
+        Texture frameTexture = new Texture(pixmap);
+        pixmap.dispose();
+        return frameTexture;
     }
 
     public void draw(SpriteBatch batch) {
         // Zeichenposition aufs nächste logische Pixel runden (position selbst bleibt float-genau
         // für Bewegung/Kollision) - verhindert Wackeln/Shimmer an Sprite-Rändern beim skalierten
         // Nearest-Neighbor-Rendering
-        batch.draw(texture, MathUtils.round(position.x), MathUtils.round(position.y));
+        TextureRegion frame = animations.get(currentAnimationState).getFrame(getAnimationProgress());
+        float drawX = MathUtils.round(position.x);
+        float drawY = MathUtils.round(position.y);
+
+        // Horizontale Spiegelung über negative Breite (kein separates gespiegeltes Asset nötig).
+        // Anker liegt dabei bewusst auf der RECHTEN Kante (drawX + SPRITE_WIDTH), damit das
+        // gezeichnete Rechteck trotzdem [drawX, drawX + SPRITE_WIDTH] abdeckt - exakt dieselbe
+        // Fläche wie im ungespiegelten Fall, nur mit umgedrehter Textur statt verschobener Position
+        if (facingLeft) {
+            batch.draw(frame, drawX + SPRITE_WIDTH, drawY, -SPRITE_WIDTH, SPRITE_HEIGHT);
+        } else {
+            batch.draw(frame, drawX, drawY, SPRITE_WIDTH, SPRITE_HEIGHT);
+        }
         bow.draw(batch);
     }
 
@@ -211,7 +317,9 @@ public class Player {
     }
 
     public void dispose() {
-        texture.dispose();
+        for (Texture frameTexture : animationTextures) {
+            frameTexture.dispose();
+        }
         bow.dispose();
     }
 }
