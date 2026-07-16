@@ -1,20 +1,39 @@
 package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
+import java.util.EnumMap;
+
 public class Enemy {
 
     private Vector2 position;
-    private Texture texture;
 
     private float health;
 
     private static final float HURTBOX_RADIUS = 16f;
+
+    // Alle Animations-Frames haben dieselbe feste Pixelgröße, siehe Player.SPRITE_WIDTH/HEIGHT
+    private static final int SPRITE_WIDTH = 32;
+    private static final int SPRITE_HEIGHT = 32;
+
+    // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt
+    private Texture[] animationTextures;
+    private EnumMap<AnimationState, Animation> animations;
+    private AnimationState currentAnimationState;
+    private float animationTime;
+    private static final float WALK_ANIMATION_DURATION = 0.4f;
+
+    // Anders als bei Sword/Bow gibt es hier kein Weapon-Interface zu erfüllen - Enemy braucht
+    // diese Felder einfach direkt für seine eigene Angriffs-Animation
+    private float attackVisualDuration;
+    private float attackVisualTimeRemaining;
 
     private enum EnemyState {
         CHASING,
@@ -33,8 +52,33 @@ public class Enemy {
 
     public Enemy(float startX, float startY){
         this.position = new Vector2(startX, startY);
-        this.texture = new Texture("enemy_placeholder.png");
         this.health = 20;
+
+        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2 - andere Farbtöne als Player, damit beide
+        // im Spiel unterscheidbar bleiben. Echte Pixelart ersetzt das später (Quest 7.10)
+        this.animationTextures = new Texture[] {
+            createFrameTexture(new Color(0.6f, 0.2f, 0.2f, 1f)),
+            createFrameTexture(new Color(0.6f, 0.2f, 0.2f, 1f)),
+            createFrameTexture(new Color(0.8f, 0.35f, 0.2f, 1f)),
+            createFrameTexture(new Color(0.9f, 0.5f, 0.1f, 1f)),
+            createFrameTexture(new Color(1f, 0.7f, 0.2f, 1f))
+        };
+        this.animations = new EnumMap<>(AnimationState.class);
+        animations.put(AnimationState.IDLE, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[0])
+        }));
+        animations.put(AnimationState.WALK, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[1]),
+            new TextureRegion(animationTextures[2])
+        }));
+        animations.put(AnimationState.ATTACK, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[3]),
+            new TextureRegion(animationTextures[4])
+        }));
+        // HURT/DEATH kommen erst in Quest 7.7 dazu
+        this.currentAnimationState = AnimationState.IDLE;
+        this.animationTime = 0f;
+        this.attackVisualDuration = 0.15f;
 
         this.state = EnemyState.CHASING;
         this.moveSpeed = 60f;
@@ -49,6 +93,12 @@ public class Enemy {
         if (!isAlive()) {
             return;
         }
+
+        if (attackVisualTimeRemaining > 0) {
+            attackVisualTimeRemaining -= deltaTime;
+        }
+        animationTime += deltaTime;
+        currentAnimationState = determineAnimationState();
 
         Vector2 myCenter = getCenter();
         Vector2 playerCenter = player.getCenter();
@@ -86,6 +136,7 @@ public class Enemy {
                 attackCooldownRemaining -= deltaTime;
             } else {
                 attackCooldownRemaining = attackCooldownDuration;
+                attackVisualTimeRemaining = attackVisualDuration;
                 if (DebugSettings.logDamage) {
                     System.out.println("Enemy greift an!");
                 }
@@ -107,7 +158,41 @@ public class Enemy {
     }
 
     private Vector2 getCenter() {
-        return new Vector2(position.x + texture.getWidth() / 2f, position.y + texture.getHeight() / 2f);
+        return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
+    }
+
+    // Prioritätsreihenfolge ATTACK > WALK > IDLE. Fällt beides nicht zu (state == ATTACKING,
+    // aber gerade zwischen zwei Treffern im Cooldown), bleibt als einziger verbleibender Fall
+    // IDLE übrig - kein extra "wartet"-Zustand nötig.
+    private AnimationState determineAnimationState() {
+        if (attackVisualTimeRemaining > 0) {
+            return AnimationState.ATTACK;
+        }
+        if (state == EnemyState.CHASING) {
+            return AnimationState.WALK;
+        }
+        return AnimationState.IDLE;
+    }
+
+    // Fortschritts-Anteil - dieselben zwei Formeln wie bei Player (WALK: looping über
+    // animationTime, ATTACK: Countdown-Fortschritt), nur auf Enemys eigene Felder angewendet
+    private float getAnimationProgress() {
+        if (currentAnimationState == AnimationState.WALK) {
+            return (animationTime % WALK_ANIMATION_DURATION) / WALK_ANIMATION_DURATION;
+        }
+        if (currentAnimationState == AnimationState.ATTACK) {
+            return 1f - (attackVisualTimeRemaining / attackVisualDuration);
+        }
+        return 0f;
+    }
+
+    private Texture createFrameTexture(Color color) {
+        Pixmap pixmap = new Pixmap(SPRITE_WIDTH, SPRITE_HEIGHT, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fill();
+        Texture frameTexture = new Texture(pixmap);
+        pixmap.dispose();
+        return frameTexture;
     }
 
     // Reichweiten- und Kegel-Check: Ist dieser Gegner innerhalb "range" und ungefähr in "direction"?
@@ -135,7 +220,8 @@ public class Enemy {
 
     public void draw(SpriteBatch batch) {
         // Pixel-Snapping wie bei Player.draw() - siehe dortiger Kommentar
-        batch.draw(texture, MathUtils.round(position.x), MathUtils.round(position.y));
+        TextureRegion frame = animations.get(currentAnimationState).getFrame(getAnimationProgress());
+        batch.draw(frame, MathUtils.round(position.x), MathUtils.round(position.y));
     }
 
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
@@ -145,6 +231,8 @@ public class Enemy {
     }
 
     public void dispose() {
-        texture.dispose();
+        for (Texture frameTexture : animationTextures) {
+            frameTexture.dispose();
+        }
     }
 }
