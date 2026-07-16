@@ -36,6 +36,12 @@ public class Player {
     // Bleibt bei reiner Vertikalbewegung/Stillstand erhalten (siehe updateFacing()) - kein Reset
     // pro Frame wie bei "direction", sonst würde der Charakter beim Stehenbleiben "zurückschauen"
     private boolean facingLeft;
+    // Countdown-Timer wie bei Sword.attackVisualTimeRemaining - werden in takeDamage() gesetzt,
+    // ticken in updateAnimation() (nicht update()!) herunter, siehe dortiger Kommentar
+    private float hurtTimeRemaining;
+    private float deathTimeRemaining;
+    private static final float HURT_ANIMATION_DURATION = 0.2f;
+    private static final float DEATH_ANIMATION_DURATION = 0.6f;
 
     private enum PlayerState{
         NORMAL,
@@ -65,14 +71,20 @@ public class Player {
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
 
-        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2 (unterschiedlich hell/farbig, damit der
-        // Frame-Wechsel sichtbar ist) - echte Pixelart ersetzt das später (Quest 7.10)
+        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2, Hurt 1, Death 3 (unterschiedlich
+        // hell/farbig, damit der Frame-Wechsel sichtbar ist) - echte Pixelart ersetzt das
+        // später (Quest 7.10). Death durchläuft bewusst 3 statt 2 Frames (Treffer -> Fallen ->
+        // Ruhen), auch als reiner Platzhalter schon klar lesbar.
         this.animationTextures = new Texture[] {
             createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
             createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
             createFrameTexture(new Color(0.5f, 0.7f, 1f, 1f)),
             createFrameTexture(new Color(0.9f, 0.7f, 0.1f, 1f)),
-            createFrameTexture(new Color(1f, 0.9f, 0.3f, 1f))
+            createFrameTexture(new Color(1f, 0.9f, 0.3f, 1f)),
+            createFrameTexture(new Color(1f, 0.2f, 0.2f, 1f)),
+            createFrameTexture(new Color(0.8f, 0.1f, 0.1f, 1f)),
+            createFrameTexture(new Color(0.5f, 0.15f, 0.15f, 1f)),
+            createFrameTexture(new Color(0.25f, 0.25f, 0.25f, 1f))
         };
         this.animations = new EnumMap<>(AnimationState.class);
         animations.put(AnimationState.IDLE, new Animation(new TextureRegion[] {
@@ -86,7 +98,14 @@ public class Player {
             new TextureRegion(animationTextures[3]),
             new TextureRegion(animationTextures[4])
         }));
-        // HURT/DEATH kommen erst in Quest 7.5 dazu
+        animations.put(AnimationState.HURT, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[5])
+        }));
+        animations.put(AnimationState.DEATH, new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[6]),
+            new TextureRegion(animationTextures[7]),
+            new TextureRegion(animationTextures[8])
+        }));
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
 
@@ -208,6 +227,8 @@ public class Player {
             return;
         }
 
+        hurtTimeRemaining = HURT_ANIMATION_DURATION;
+
         if (health - amount > 0) {
             health -= amount;
             if (DebugSettings.logDamage) {
@@ -215,6 +236,7 @@ public class Player {
             }
         } else {
             health = 0;
+            deathTimeRemaining = DEATH_ANIMATION_DURATION;
             if (DebugSettings.logDamage) {
                 System.out.println("Tödlicher Schaden erlitten!");
             }
@@ -250,6 +272,13 @@ public class Player {
         animationTime += deltaTime;
         updateFacing();
 
+        if (hurtTimeRemaining > 0) {
+            hurtTimeRemaining -= deltaTime;
+        }
+        if (deathTimeRemaining > 0) {
+            deathTimeRemaining -= deltaTime;
+        }
+
         AnimationState newState = determineAnimationState();
         if (newState != currentAnimationState && DebugSettings.logAnimationState) {
             System.out.println("Player-Animation: " + currentAnimationState + " -> " + newState);
@@ -267,13 +296,21 @@ public class Player {
         }
     }
 
-    // Prioritätsreihenfolge: ATTACK schlägt WALK/IDLE. Bei gleichzeitig aktivem Schwert- UND
-    // Bogen-Angriff gewinnt bewusst das Schwert - beide gleichzeitig aktiv zu haben ist ohnehin
-    // ein Rand-/Debug-Fall (siehe ROADMAP Quest 7).
+    // Prioritätsreihenfolge: DEATH > HURT > ATTACK > WALK > IDLE. DEATH prüft bewusst "!isAlive()"
+    // statt des ablaufenden deathTimeRemaining-Timers - so bleibt die Animation dauerhaft auf
+    // DEATH stehen, statt nach Ablauf des Timers sichtbar auf IDLE/WALK zurückzuspringen.
+    // Bei gleichzeitig aktivem Schwert- UND Bogen-Angriff gewinnt bewusst das Schwert - beide
+    // gleichzeitig aktiv zu haben ist ohnehin ein Rand-/Debug-Fall (siehe ROADMAP Quest 7).
     // DASHING nutzt bewusst dieselbe Walk-Animation - der Vertical Slice sieht keinen eigenen
     // Dash-Animationszustand vor. Funktioniert "gratis": "direction" wird während des Dashs
     // nicht zurückgesetzt und bleibt daher automatisch != 0.
     private AnimationState determineAnimationState() {
+        if (!isAlive()) {
+            return AnimationState.DEATH;
+        }
+        if (hurtTimeRemaining > 0) {
+            return AnimationState.HURT;
+        }
         if (sword.isAttackVisualActive() || bow.isAttackVisualActive()) {
             return AnimationState.ATTACK;
         }
@@ -295,6 +332,14 @@ public class Player {
             // Dieselbe Priorität wie in determineAnimationState(): Schwert gewinnt, falls beide
             // Waffen gleichzeitig aktiv wären
             return sword.isAttackVisualActive() ? sword.getAttackVisualProgress() : bow.getAttackVisualProgress();
+        }
+        if (currentAnimationState == AnimationState.HURT) {
+            return 1f - (hurtTimeRemaining / HURT_ANIMATION_DURATION);
+        }
+        if (currentAnimationState == AnimationState.DEATH) {
+            // Bleibt auch nach Ablauf des Timers bei/über 1.0 (getFrame() clampt) - hält damit
+            // automatisch den letzten Death-Frame, wie gewollt
+            return 1f - (deathTimeRemaining / DEATH_ANIMATION_DURATION);
         }
         return 0f;
     }
