@@ -4,13 +4,14 @@ Technische Vorgaben für den echten Kunst-Tausch in Quest 7 — die Systeme (Ani
 
 ## Grundraster
 
-- **Alle Frames: 32×32 Pixel**, passend zur festen `SPRITE_WIDTH`/`SPRITE_HEIGHT`-Konvention im Code.
+- **Spieler-Frames: 48×48 Pixel** (geändert 2026-07-17, ursprünglich 32×32 - mehr Detailspielraum fürs Charakter-Design gewünscht). Bewusst größer als die Kachelgröße (32×32, siehe unten) - beide sind im Code vollständig entkoppelt (`Player.SPRITE_WIDTH/HEIGHT` betrifft nur `Player`, nirgendwo sonst verwendet).
+- **Gegner-/Terrain-/Wand-Frames bleiben 32×32 Pixel** (`Enemy.SPRITE_WIDTH/HEIGHT`, `DualGridTerrainRenderer.TILE_SIZE` unverändert).
 - **Nur eine Blickrichtung pro Zeile nötig** (nach rechts schauend empfohlen) — horizontale Spiegelung für "nach links" passiert bereits automatisch im Code (`Player.draw()`, seit Quest 7.3). Kein doppelter Zeichenaufwand für Links/Rechts.
 - Export als PNG mit Alpha-Kanal (transparenter Hintergrund außerhalb der Figur).
 
 ## 1. Spieler-Sprite-Sheet (`player_spritesheet.png`)
 
-Ein Sprite-Sheet, **7 Zeilen × 3 Spalten**, jede Zelle 32×32px → Gesamtgröße **96×224px**.
+Ein Sprite-Sheet, **7 Zeilen × 3 Spalten**, jede Zelle **48×48px** → Gesamtgröße **144×336px**.
 
 Der Spieler hat für Idle/Walk zwei Blickrichtungs-Varianten (Süden/Norden, seit Quest 7.10-Vorbereitung 2026-07-16): Süden deckt zusammen mit der horizontalen Spiegelung Ost/Südost/Süd/Südwest/West ab, Norden deckt Nordost/Nord/Nordwest ab. Attack/Hurt/Death bleiben bei nur einer Variante (kein Richtungs-Wechsel für diese Zustände im aktuellen Scope).
 
