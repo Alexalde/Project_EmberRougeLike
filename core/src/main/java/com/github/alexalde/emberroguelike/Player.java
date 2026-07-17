@@ -21,9 +21,11 @@ public class Player {
     private float speed;
 
     // Alle Animations-Frames haben dieselbe feste Pixelgröße - es gibt keine einzelne "die"
-    // Textur mehr, von der man Breite/Höhe abfragen könnte (siehe animationTextures unten)
-    private static final int SPRITE_WIDTH = 32;
-    private static final int SPRITE_HEIGHT = 32;
+    // Textur mehr, von der man Breite/Höhe abfragen könnte (siehe animationTextures unten).
+    // Bewusst größer als TILE_SIZE (32, siehe DualGridTerrainRenderer) - Sprite- und
+    // Kachelgröße sind vollständig entkoppelt (kein Codepfad verknüpft beide).
+    private static final int SPRITE_WIDTH = 48;
+    private static final int SPRITE_HEIGHT = 48;
 
     // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt
     private Texture[] animationTextures;
