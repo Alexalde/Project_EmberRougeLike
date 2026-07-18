@@ -9,23 +9,25 @@ Technische Vorgaben für den echten Kunst-Tausch in Quest 7 — die Systeme (Ani
 - **Nur eine Blickrichtung pro Zeile nötig** (nach rechts schauend empfohlen) — horizontale Spiegelung für "nach links" passiert bereits automatisch im Code (`Player.draw()`, seit Quest 7.3). Kein doppelter Zeichenaufwand für Links/Rechts.
 - Export als PNG mit Alpha-Kanal (transparenter Hintergrund außerhalb der Figur).
 
-## 1. Spieler-Sprite-Sheet (`player_spritesheet.png`)
+## 1. Spieler-Sprite-Sheet (`player_spritesheet.png` + `player_spritesheet.json`)
 
-Ein Sprite-Sheet, **7 Zeilen × 3 Spalten**, jede Zelle **48×48px** → Gesamtgröße **144×336px**.
+**Aktualisiert 2026-07-18: kein festes Zeilen/Spalten-Raster mehr.** Stattdessen: eine Aseprite-Datei mit EINER fortlaufenden Timeline, in der jede Animation als eigener, benannter **Tag** markiert ist (Frame-Menü > Tags). Export über `File > Export Sprite Sheet` mit aktiviertem **"Data File"** (JSON) und **deaktiviertem "Trim"**. Beide exportierten Dateien (`player_spritesheet.png`, `player_spritesheet.json`) liegen unter `assets/` — `AsepriteSpriteSheet.java` liest die JSON-Datei und baut daraus pro Tag eine `Animation`.
 
-Der Spieler hat für Idle/Walk zwei Blickrichtungs-Varianten (Süden/Norden, seit Quest 7.10-Vorbereitung 2026-07-16): Süden deckt zusammen mit der horizontalen Spiegelung Ost/Südost/Süd/Südwest/West ab, Norden deckt Nordost/Nord/Nordwest ab. Attack/Hurt/Death bleiben bei nur einer Variante (kein Richtungs-Wechsel für diese Zustände im aktuellen Scope).
+Frame-Anzahl pro Tag ist bewusst NICHT mehr festgelegt (z.B. Idle hat aktuell 14 Frames) - das übernimmt jetzt Aseprite selbst, inklusive individueller Frame-Dauer pro Bild (z.B. Ease-In/Out-Timing), die für Idle/Walk direkt fürs Abspielen genutzt wird (siehe `Animation.getFrameByElapsedTime()`).
 
-| Zeile | Zustand | Frames | Genutzte Spalten |
-|---|---|---|---|
-| 0 (oben) | Idle (Süden) | 1 | Spalte 0, Spalten 1-2 leer/transparent lassen |
-| 1 | Idle (Norden) | 1 | Spalte 0, Spalten 1-2 leer |
-| 2 | Walk (Süden) | 2 | Spalten 0-1, Spalte 2 leer |
-| 3 | Walk (Norden) | 2 | Spalten 0-1, Spalte 2 leer |
-| 4 | Attack | 2 | Spalten 0-1, Spalte 2 leer |
-| 5 | Hurt | 1 | Spalte 0, Spalten 1-2 leer |
-| 6 (unten) | Death | 3 | Spalten 0-2 (volle Zeile) |
+**Exakte Tag-Namen** (müssen genau so geschrieben sein, Groß-/Kleinschreibung und Bindestrich zählen):
 
-Zeilenreihenfolge ist wichtig — sie muss zur Lade-Reihenfolge im Code passen (`TextureRegion.split()` liest zeilenweise von oben).
+| Tag-Name | Zustand |
+|---|---|
+| `Idle-South` | Idle, Blickrichtung Süden (deckt mit Spiegelung auch Ost/Südost/Südwest/West ab) |
+| `Idle-North` | Idle, Blickrichtung Norden (deckt mit Spiegelung auch Nordost/Nordwest ab) |
+| `Walk-South` | Walk, Süden |
+| `Walk-North` | Walk, Norden |
+| `Attack` | Angriff (keine Richtungs-Variante im aktuellen Scope) |
+| `Hurt` | Getroffen (keine Richtungs-Variante) |
+| `Death` | Sterben (keine Richtungs-Variante) |
+
+Fehlt ein Tag (noch) in der Datei, bleibt für diesen Zustand automatisch der bisherige Pixmap-Platzhalter aktiv (siehe `Player`-Konstruktor, `orPlaceholder()`) - du kannst also Tag für Tag nachliefern, ohne dass der Rest wartet.
 
 ## 2. Gegner-Sprite-Sheet (`enemy_spritesheet.png`)
 

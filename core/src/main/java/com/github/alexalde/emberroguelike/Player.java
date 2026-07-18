@@ -29,6 +29,10 @@ public class Player {
 
     // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt
     private Texture[] animationTextures;
+    // Echte, von Aseprite exportierte Kunst (siehe Quest 7.10) - Tags, die darin noch nicht
+    // existieren, liefern null, dann bleibt der Pixmap-Platzhalter für diesen Zustand aktiv
+    // (siehe Konstruktor). So kann Kunst nach und nach eintrudeln, ohne dass der Rest wartet.
+    private AsepriteSpriteSheet playerSpriteSheet;
     private EnumMap<AnimationState, Animation> animations;
     private AnimationState currentAnimationState;
     // Frei laufender Zeit-Akkumulator für looping Animationen (Idle/Walk) - wird NIE
@@ -97,33 +101,51 @@ public class Player {
             createFrameTexture(new Color(0.3f, 0.1f, 0.6f, 1f)),
             createFrameTexture(new Color(0.6f, 0.4f, 0.9f, 1f))
         };
-        this.animations = new EnumMap<>(AnimationState.class);
-        animations.put(AnimationState.IDLE, new Animation(new TextureRegion[] {
+        // IDLE/WALK sind jetzt echtzeit-basiert (siehe Animation.getFrameByElapsedTime()), auch
+        // als Platzhalter - deshalb brauchen sie eine Frame-Dauern-Liste. Bei 1 Frame (Idle) ist
+        // der genaue Wert egal (Loop landet ohnehin sofort wieder auf demselben Frame), bei Walk
+        // ergeben 2 gleich lange Frames dieselbe Gesamtdauer wie bisher WALK_ANIMATION_DURATION.
+        Animation placeholderIdle = new Animation(new TextureRegion[] {
             new TextureRegion(animationTextures[0])
-        }));
-        animations.put(AnimationState.WALK, new Animation(new TextureRegion[] {
+        }, new float[] { 1f });
+        Animation placeholderWalk = new Animation(new TextureRegion[] {
             new TextureRegion(animationTextures[1]),
             new TextureRegion(animationTextures[2])
-        }));
-        animations.put(AnimationState.ATTACK, new Animation(new TextureRegion[] {
+        }, new float[] { WALK_ANIMATION_DURATION / 2f, WALK_ANIMATION_DURATION / 2f });
+        Animation placeholderIdleUp = new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[9])
+        }, new float[] { 1f });
+        Animation placeholderWalkUp = new Animation(new TextureRegion[] {
+            new TextureRegion(animationTextures[10]),
+            new TextureRegion(animationTextures[11])
+        }, new float[] { WALK_ANIMATION_DURATION / 2f, WALK_ANIMATION_DURATION / 2f });
+
+        // ATTACK/HURT/DEATH bleiben progress-basiert (siehe Animation.getFrame()), da an
+        // Gameplay-Timer gekoppelt - keine Frame-Dauern-Liste nötig
+        Animation placeholderAttack = new Animation(new TextureRegion[] {
             new TextureRegion(animationTextures[3]),
             new TextureRegion(animationTextures[4])
-        }));
-        animations.put(AnimationState.HURT, new Animation(new TextureRegion[] {
+        });
+        Animation placeholderHurt = new Animation(new TextureRegion[] {
             new TextureRegion(animationTextures[5])
-        }));
-        animations.put(AnimationState.DEATH, new Animation(new TextureRegion[] {
+        });
+        Animation placeholderDeath = new Animation(new TextureRegion[] {
             new TextureRegion(animationTextures[6]),
             new TextureRegion(animationTextures[7]),
             new TextureRegion(animationTextures[8])
-        }));
-        this.idleUpAnimation = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[9])
         });
-        this.walkUpAnimation = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[10]),
-            new TextureRegion(animationTextures[11])
-        });
+
+        this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
+
+        this.animations = new EnumMap<>(AnimationState.class);
+        animations.put(AnimationState.IDLE, orPlaceholder(playerSpriteSheet.getAnimation("Idle-South"), placeholderIdle));
+        animations.put(AnimationState.WALK, orPlaceholder(playerSpriteSheet.getAnimation("Walk-South"), placeholderWalk));
+        animations.put(AnimationState.ATTACK, orPlaceholder(playerSpriteSheet.getAnimation("Attack"), placeholderAttack));
+        animations.put(AnimationState.HURT, orPlaceholder(playerSpriteSheet.getAnimation("Hurt"), placeholderHurt));
+        animations.put(AnimationState.DEATH, orPlaceholder(playerSpriteSheet.getAnimation("Death"), placeholderDeath));
+        this.idleUpAnimation = orPlaceholder(playerSpriteSheet.getAnimation("Idle-North"), placeholderIdleUp);
+        this.walkUpAnimation = orPlaceholder(playerSpriteSheet.getAnimation("Walk-North"), placeholderWalkUp);
+
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
 
@@ -345,14 +367,10 @@ public class Player {
         return AnimationState.IDLE;
     }
 
-    // Fortschritts-Anteil für looping Animationen (aktuell nur WALK), aus dem frei laufenden
-    // animationTime-Akkumulator berechnet (siehe GDD 5.3): Rest der Division durch die
-    // Zyklusdauer, wieder durch die Zyklusdauer geteilt - Ergebnis liegt damit immer in [0, 1).
-    // IDLE hat nur 1 Frame, der Wert ist dort egal (getFrame() clampt ohnehin).
+    // Fortschritts-Anteil für an Gameplay-Timer gekoppelte Animationen (ATTACK/HURT/DEATH,
+    // siehe GDD 5.3) - IDLE/WALK laufen seit der Aseprite-Anbindung stattdessen echtzeit-basiert
+    // über Animation.getFrameByElapsedTime(), siehe draw().
     private float getAnimationProgress() {
-        if (currentAnimationState == AnimationState.WALK) {
-            return (animationTime % WALK_ANIMATION_DURATION) / WALK_ANIMATION_DURATION;
-        }
         if (currentAnimationState == AnimationState.ATTACK) {
             // Dieselbe Priorität wie in determineAnimationState(): Schwert gewinnt, falls beide
             // Waffen gleichzeitig aktiv wären
@@ -382,6 +400,11 @@ public class Player {
         return animations.get(currentAnimationState);
     }
 
+    // null (Tag existiert noch nicht in der Aseprite-Datei) -> Platzhalter, sonst die echte Kunst
+    private Animation orPlaceholder(Animation realAnimation, Animation placeholder) {
+        return realAnimation != null ? realAnimation : placeholder;
+    }
+
     private Texture createFrameTexture(Color color) {
         Pixmap pixmap = new Pixmap(SPRITE_WIDTH, SPRITE_HEIGHT, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
@@ -395,7 +418,12 @@ public class Player {
         // Zeichenposition aufs nächste logische Pixel runden (position selbst bleibt float-genau
         // für Bewegung/Kollision) - verhindert Wackeln/Shimmer an Sprite-Rändern beim skalierten
         // Nearest-Neighbor-Rendering
-        TextureRegion frame = getCurrentAnimation().getFrame(getAnimationProgress());
+        // IDLE/WALK: echtzeit-basiert (individuelle Frame-Dauern), sonst progress-basiert
+        // (Gameplay-Timer-gekoppelt) - siehe Animation-Klasse
+        boolean isLoopingState = currentAnimationState == AnimationState.IDLE || currentAnimationState == AnimationState.WALK;
+        TextureRegion frame = isLoopingState
+            ? getCurrentAnimation().getFrameByElapsedTime(animationTime)
+            : getCurrentAnimation().getFrame(getAnimationProgress());
         float drawX = MathUtils.round(position.x);
         float drawY = MathUtils.round(position.y);
 
@@ -420,6 +448,7 @@ public class Player {
         for (Texture frameTexture : animationTextures) {
             frameTexture.dispose();
         }
+        playerSpriteSheet.dispose();
         bow.dispose();
     }
 }
