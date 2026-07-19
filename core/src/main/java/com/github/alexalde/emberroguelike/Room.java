@@ -90,6 +90,14 @@ public class Room {
         return pixelHeight;
     }
 
+    // Läuft jeden Frame (siehe Main.render()), unabhängig davon ob Game Over ist - treibt die
+    // Dual-Grid-Terrain-Animation an (z.B. Wasser-Ripple), rein kosmetisch, kein Gameplay-Bezug
+    public void update(float deltaTime) {
+        if (terrainRenderer != null) {
+            terrainRenderer.update(deltaTime);
+        }
+    }
+
     // Liest den "TerrainData"-Layer manuell aus (Boden/Lücke pro Zelle) - dieser Layer wird
     // NIE direkt vom OrthogonalTiledMapRenderer gerendert, siehe render() unten
     private boolean[][] parseTerrainGrid(TiledMapTileLayer terrainDataLayer) {
