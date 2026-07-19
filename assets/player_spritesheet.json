@@ -1,5 +1,5 @@
 { "frames": {
-   "RedpandaVersionAnimated0.1 0.aseprite": {
+   "RedpandaVersionAnimated0.2 0.aseprite": {
     "frame": { "x": 0, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -7,7 +7,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 40
    },
-   "RedpandaVersionAnimated0.1 1.aseprite": {
+   "RedpandaVersionAnimated0.2 1.aseprite": {
     "frame": { "x": 48, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -15,7 +15,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 2.aseprite": {
+   "RedpandaVersionAnimated0.2 2.aseprite": {
     "frame": { "x": 96, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -23,7 +23,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 3.aseprite": {
+   "RedpandaVersionAnimated0.2 3.aseprite": {
     "frame": { "x": 144, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -31,7 +31,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 4.aseprite": {
+   "RedpandaVersionAnimated0.2 4.aseprite": {
     "frame": { "x": 192, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -39,7 +39,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 5.aseprite": {
+   "RedpandaVersionAnimated0.2 5.aseprite": {
     "frame": { "x": 240, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -47,7 +47,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 6.aseprite": {
+   "RedpandaVersionAnimated0.2 6.aseprite": {
     "frame": { "x": 288, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -55,7 +55,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 7.aseprite": {
+   "RedpandaVersionAnimated0.2 7.aseprite": {
     "frame": { "x": 336, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -63,7 +63,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 8.aseprite": {
+   "RedpandaVersionAnimated0.2 8.aseprite": {
     "frame": { "x": 384, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -71,7 +71,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 9.aseprite": {
+   "RedpandaVersionAnimated0.2 9.aseprite": {
     "frame": { "x": 432, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -79,7 +79,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 10.aseprite": {
+   "RedpandaVersionAnimated0.2 10.aseprite": {
     "frame": { "x": 480, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -87,7 +87,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 11.aseprite": {
+   "RedpandaVersionAnimated0.2 11.aseprite": {
     "frame": { "x": 528, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -95,7 +95,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 12.aseprite": {
+   "RedpandaVersionAnimated0.2 12.aseprite": {
     "frame": { "x": 576, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -103,7 +103,7 @@
     "sourceSize": { "w": 48, "h": 48 },
     "duration": 100
    },
-   "RedpandaVersionAnimated0.1 13.aseprite": {
+   "RedpandaVersionAnimated0.2 13.aseprite": {
     "frame": { "x": 624, "y": 0, "w": 48, "h": 48 },
     "rotated": false,
     "trimmed": false,
@@ -129,7 +129,14 @@
    { "name": "L Leg Shape", "opacity": 255, "blendMode": "normal" },
    { "name": "R Leg Shape", "opacity": 255, "blendMode": "normal" },
    { "name": "R Arm Shape", "opacity": 255, "blendMode": "normal" },
-   { "name": "Head shape", "opacity": 255, "blendMode": "normal" }
+   { "name": "Head shape", "opacity": 255, "blendMode": "normal" },
+   { "name": "Tail", "opacity": 255, "blendMode": "normal" },
+   { "name": "L Leg", "opacity": 255, "blendMode": "normal" },
+   { "name": "L Arm", "opacity": 255, "blendMode": "normal" },
+   { "name": "Body", "opacity": 255, "blendMode": "normal" },
+   { "name": "R Leg", "opacity": 255, "blendMode": "normal" },
+   { "name": "R Arm", "opacity": 255, "blendMode": "normal" },
+   { "name": "Head", "opacity": 255, "blendMode": "normal" }
   ],
   "slices": [
   ]

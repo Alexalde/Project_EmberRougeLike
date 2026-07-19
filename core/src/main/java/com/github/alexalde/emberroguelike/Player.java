@@ -2,8 +2,6 @@ package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -27,13 +25,16 @@ public class Player {
     private static final int SPRITE_WIDTH = 48;
     private static final int SPRITE_HEIGHT = 48;
 
-    // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt
-    private Texture[] animationTextures;
     // Echte, von Aseprite exportierte Kunst (siehe Quest 7.10) - Tags, die darin noch nicht
-    // existieren, liefern null, dann bleibt der Pixmap-Platzhalter für diesen Zustand aktiv
-    // (siehe Konstruktor). So kann Kunst nach und nach eintrudeln, ohne dass der Rest wartet.
+    // existieren, liefern null. Für solche Zustände wird stattdessen die bereits fertige
+    // Idle-South-Animation wiederverwendet (echte Form + Bewegung statt eines Rechtecks), nur
+    // eingefärbt (siehe tints/draw()), damit die Zustände optisch unterscheidbar bleiben. So
+    // kann Kunst nach und nach eintrudeln, ohne dass der Rest auf ein fertiges Set wartet.
     private AsepriteSpriteSheet playerSpriteSheet;
     private EnumMap<AnimationState, Animation> animations;
+    // WHITE = echte Kunst (keine Verfälschung der echten Farben), jede andere Farbe = Tönung
+    // für einen Zustand, der noch die wiederverwendete Idle-Form nutzt
+    private EnumMap<AnimationState, Color> tints;
     private AnimationState currentAnimationState;
     // Frei laufender Zeit-Akkumulator für looping Animationen (Idle/Walk) - wird NIE
     // zurückgesetzt, siehe getAnimationProgress()
@@ -48,6 +49,8 @@ public class Player {
     private boolean facingUp;
     private Animation idleUpAnimation;
     private Animation walkUpAnimation;
+    private Color idleUpTint;
+    private Color walkUpTint;
     // Countdown-Timer wie bei Sword.attackVisualTimeRemaining - werden in takeDamage() gesetzt,
     // ticken in updateAnimation() (nicht update()!) herunter, siehe dortiger Kommentar
     private float hurtTimeRemaining;
@@ -83,68 +86,27 @@ public class Player {
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
 
-        // Platzhalter-Frames: Idle 1, Walk 2, Attack 2, Hurt 1, Death 3, plus Idle-Norden 1 und
-        // Walk-Norden 2 (unterschiedlich hell/farbig, damit der Frame-Wechsel sichtbar ist) -
-        // echte Pixelart ersetzt das später (Quest 7.10). Death durchläuft bewusst 3 statt 2
-        // Frames (Treffer -> Fallen -> Ruhen), auch als reiner Platzhalter schon klar lesbar.
-        this.animationTextures = new Texture[] {
-            createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
-            createFrameTexture(new Color(0.2f, 0.4f, 0.9f, 1f)),
-            createFrameTexture(new Color(0.5f, 0.7f, 1f, 1f)),
-            createFrameTexture(new Color(0.9f, 0.7f, 0.1f, 1f)),
-            createFrameTexture(new Color(1f, 0.9f, 0.3f, 1f)),
-            createFrameTexture(new Color(1f, 0.2f, 0.2f, 1f)),
-            createFrameTexture(new Color(0.8f, 0.1f, 0.1f, 1f)),
-            createFrameTexture(new Color(0.5f, 0.15f, 0.15f, 1f)),
-            createFrameTexture(new Color(0.25f, 0.25f, 0.25f, 1f)),
-            createFrameTexture(new Color(0.3f, 0.1f, 0.6f, 1f)),
-            createFrameTexture(new Color(0.3f, 0.1f, 0.6f, 1f)),
-            createFrameTexture(new Color(0.6f, 0.4f, 0.9f, 1f))
-        };
-        // IDLE/WALK sind jetzt echtzeit-basiert (siehe Animation.getFrameByElapsedTime()), auch
-        // als Platzhalter - deshalb brauchen sie eine Frame-Dauern-Liste. Bei 1 Frame (Idle) ist
-        // der genaue Wert egal (Loop landet ohnehin sofort wieder auf demselben Frame), bei Walk
-        // ergeben 2 gleich lange Frames dieselbe Gesamtdauer wie bisher WALK_ANIMATION_DURATION.
-        Animation placeholderIdle = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[0])
-        }, new float[] { 1f });
-        Animation placeholderWalk = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[1]),
-            new TextureRegion(animationTextures[2])
-        }, new float[] { WALK_ANIMATION_DURATION / 2f, WALK_ANIMATION_DURATION / 2f });
-        Animation placeholderIdleUp = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[9])
-        }, new float[] { 1f });
-        Animation placeholderWalkUp = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[10]),
-            new TextureRegion(animationTextures[11])
-        }, new float[] { WALK_ANIMATION_DURATION / 2f, WALK_ANIMATION_DURATION / 2f });
-
-        // ATTACK/HURT/DEATH bleiben progress-basiert (siehe Animation.getFrame()), da an
-        // Gameplay-Timer gekoppelt - keine Frame-Dauern-Liste nötig
-        Animation placeholderAttack = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[3]),
-            new TextureRegion(animationTextures[4])
-        });
-        Animation placeholderHurt = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[5])
-        });
-        Animation placeholderDeath = new Animation(new TextureRegion[] {
-            new TextureRegion(animationTextures[6]),
-            new TextureRegion(animationTextures[7]),
-            new TextureRegion(animationTextures[8])
-        });
-
         this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
+        // Idle-South existiert bereits als echte Kunst (siehe Quest 7.10) - dient als
+        // Ersatz-Optik (Form + echte Bewegung) für jeden Zustand, der noch keine eigene echte
+        // Kunst hat, statt eines einfarbigen Rechtecks
+        Animation idleShapeFallback = playerSpriteSheet.getAnimation("Idle-South");
 
         this.animations = new EnumMap<>(AnimationState.class);
-        animations.put(AnimationState.IDLE, orPlaceholder(playerSpriteSheet.getAnimation("Idle-South"), placeholderIdle));
-        animations.put(AnimationState.WALK, orPlaceholder(playerSpriteSheet.getAnimation("Walk-South"), placeholderWalk));
-        animations.put(AnimationState.ATTACK, orPlaceholder(playerSpriteSheet.getAnimation("Attack"), placeholderAttack));
-        animations.put(AnimationState.HURT, orPlaceholder(playerSpriteSheet.getAnimation("Hurt"), placeholderHurt));
-        animations.put(AnimationState.DEATH, orPlaceholder(playerSpriteSheet.getAnimation("Death"), placeholderDeath));
-        this.idleUpAnimation = orPlaceholder(playerSpriteSheet.getAnimation("Idle-North"), placeholderIdleUp);
-        this.walkUpAnimation = orPlaceholder(playerSpriteSheet.getAnimation("Walk-North"), placeholderWalkUp);
+        this.tints = new EnumMap<>(AnimationState.class);
+        putStateAnimation(AnimationState.IDLE, playerSpriteSheet.getAnimation("Idle-South"), idleShapeFallback, Color.WHITE);
+        putStateAnimation(AnimationState.WALK, playerSpriteSheet.getAnimation("Walk-South"), idleShapeFallback, new Color(0.5f, 0.7f, 1f, 1f));
+        putStateAnimation(AnimationState.ATTACK, playerSpriteSheet.getAnimation("Attack"), idleShapeFallback, new Color(1f, 0.8f, 0.2f, 1f));
+        putStateAnimation(AnimationState.HURT, playerSpriteSheet.getAnimation("Hurt"), idleShapeFallback, new Color(1f, 0.2f, 0.2f, 1f));
+        putStateAnimation(AnimationState.DEATH, playerSpriteSheet.getAnimation("Death"), idleShapeFallback, new Color(0.35f, 0.35f, 0.35f, 1f));
+
+        Animation realIdleNorth = playerSpriteSheet.getAnimation("Idle-North");
+        this.idleUpAnimation = realIdleNorth != null ? realIdleNorth : idleShapeFallback;
+        this.idleUpTint = realIdleNorth != null ? Color.WHITE : new Color(0.6f, 0.4f, 0.9f, 1f);
+
+        Animation realWalkNorth = playerSpriteSheet.getAnimation("Walk-North");
+        this.walkUpAnimation = realWalkNorth != null ? realWalkNorth : idleShapeFallback;
+        this.walkUpTint = realWalkNorth != null ? Color.WHITE : new Color(0.3f, 0.1f, 0.6f, 1f);
 
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
@@ -400,18 +362,23 @@ public class Player {
         return animations.get(currentAnimationState);
     }
 
-    // null (Tag existiert noch nicht in der Aseprite-Datei) -> Platzhalter, sonst die echte Kunst
-    private Animation orPlaceholder(Animation realAnimation, Animation placeholder) {
-        return realAnimation != null ? realAnimation : placeholder;
+    // Tönung passend zur von getCurrentAnimation() gewählten Animation (siehe dortige Fälle) -
+    // WHITE für echte Kunst (keine Verfälschung), sonst die Platzhalter-Farbe (siehe Konstruktor)
+    private Color getCurrentTint() {
+        if (facingUp && currentAnimationState == AnimationState.IDLE) {
+            return idleUpTint;
+        }
+        if (facingUp && currentAnimationState == AnimationState.WALK) {
+            return walkUpTint;
+        }
+        return tints.get(currentAnimationState);
     }
 
-    private Texture createFrameTexture(Color color) {
-        Pixmap pixmap = new Pixmap(SPRITE_WIDTH, SPRITE_HEIGHT, Pixmap.Format.RGBA8888);
-        pixmap.setColor(color);
-        pixmap.fill();
-        Texture frameTexture = new Texture(pixmap);
-        pixmap.dispose();
-        return frameTexture;
+    // real == null (Tag existiert noch nicht in der Aseprite-Datei) -> shapeFallback (i.d.R.
+    // Idle-South) mit Tönung, sonst die echte Kunst ungetönt (WHITE)
+    private void putStateAnimation(AnimationState state, Animation real, Animation shapeFallback, Color tint) {
+        animations.put(state, real != null ? real : shapeFallback);
+        tints.put(state, real != null ? Color.WHITE : tint);
     }
 
     public void draw(SpriteBatch batch) {
@@ -427,6 +394,10 @@ public class Player {
         float drawX = MathUtils.round(position.x);
         float drawY = MathUtils.round(position.y);
 
+        // Tönung für Platzhalter-Zustände, die die wiederverwendete Idle-Form nutzen (siehe
+        // Konstruktor/getCurrentTint()) - bei echter Kunst ist die Tönung WHITE, verändert also nichts
+        batch.setColor(getCurrentTint());
+
         // Horizontale Spiegelung über negative Breite (kein separates gespiegeltes Asset nötig).
         // Anker liegt dabei bewusst auf der RECHTEN Kante (drawX + SPRITE_WIDTH), damit das
         // gezeichnete Rechteck trotzdem [drawX, drawX + SPRITE_WIDTH] abdeckt - exakt dieselbe
@@ -436,6 +407,7 @@ public class Player {
         } else {
             batch.draw(frame, drawX, drawY, SPRITE_WIDTH, SPRITE_HEIGHT);
         }
+        batch.setColor(Color.WHITE); // zurücksetzen, sonst würde alles Danach-Gezeichnete mitgefärbt
         bow.draw(batch);
     }
 
@@ -445,9 +417,6 @@ public class Player {
     }
 
     public void dispose() {
-        for (Texture frameTexture : animationTextures) {
-            frameTexture.dispose();
-        }
         playerSpriteSheet.dispose();
         bow.dispose();
     }
