@@ -18,6 +18,9 @@ public class AsepriteSpriteSheet {
 
     private final Texture texture;
     private final Map<String, Animation> animationsByTag;
+    // Alle Frames in Original-Reihenfolge, unabhängig von Tags - siehe getAllFramesAnimation()
+    private final TextureRegion[] allFrames;
+    private final float[] allDurationsSeconds;
 
     public AsepriteSpriteSheet(String pngPath, String jsonPath) {
         this.texture = new Texture(pngPath);
@@ -29,8 +32,8 @@ public class AsepriteSpriteSheet {
         // Reihenfolge der Kind-Elemente entspricht der echten Frame-Reihenfolge (JsonValue
         // behält die Dokument-Reihenfolge bei), und frameTags[].from/to referenzieren genau
         // diese Positionen
-        TextureRegion[] allFrames = new TextureRegion[framesJson.size];
-        float[] allDurationsSeconds = new float[framesJson.size];
+        this.allFrames = new TextureRegion[framesJson.size];
+        this.allDurationsSeconds = new float[framesJson.size];
 
         int i = 0;
         for (JsonValue frameEntry = framesJson.child; frameEntry != null; frameEntry = frameEntry.next) {
@@ -61,6 +64,19 @@ public class AsepriteSpriteSheet {
     // Pixmap-Platzhalter zurückfallen
     public Animation getAnimation(String tagName) {
         return animationsByTag.get(tagName);
+    }
+
+    // Alle Frames der Datei in Original-Reihenfolge, unabhängig von Tags - für Sprite-Sheets,
+    // die als GANZES animiert werden (z.B. das Dual-Grid-Tileset: jeder Frame ist ein
+    // vollständiges Bild mit allen 16 Kacheln drin), statt separater Tags pro Unter-Animation.
+    // Roh-Arrays statt einer fertigen Animation, weil der Aufrufer daraus erst noch
+    // Unter-Bereiche herausschneidet (siehe DualGridTerrainRenderer).
+    public TextureRegion[] getAllFrameRegions() {
+        return allFrames;
+    }
+
+    public float[] getAllFrameDurations() {
+        return allDurationsSeconds;
     }
 
     public void dispose() {

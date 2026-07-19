@@ -1,0 +1,73 @@
+{ "frames": {
+   "grass water 0.aseprite": {
+    "frame": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "sourceSize": { "w": 128, "h": 128 },
+    "duration": 300
+   },
+   "grass water 1.aseprite": {
+    "frame": { "x": 128, "y": 0, "w": 128, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "sourceSize": { "w": 128, "h": 128 },
+    "duration": 300
+   },
+   "grass water 2.aseprite": {
+    "frame": { "x": 256, "y": 0, "w": 128, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "sourceSize": { "w": 128, "h": 128 },
+    "duration": 300
+   },
+   "grass water 3.aseprite": {
+    "frame": { "x": 384, "y": 0, "w": 128, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "sourceSize": { "w": 128, "h": 128 },
+    "duration": 300
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.17.2-dev",
+  "image": "terrain_dualgrid.png",
+  "format": "RGBA8888",
+  "size": { "w": 512, "h": 128 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Water Back Color", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 3", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 2", "opacity": 255, "blendMode": "normal" },
+   { "name": "Base Grass" },
+   { "name": "00", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "01", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "02", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "03", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "04", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "05", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "06", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "07", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "08", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "09", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "10", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "11", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "12", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "13", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "14", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "15", "group": "Base Grass", "opacity": 255, "blendMode": "normal" },
+   { "name": "TRENNLINIE", "opacity": 255, "blendMode": "normal" },
+   { "name": "Overlays" },
+   { "name": "01+", "group": "Overlays", "opacity": 255, "blendMode": "normal" },
+   { "name": "all", "group": "Overlays", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

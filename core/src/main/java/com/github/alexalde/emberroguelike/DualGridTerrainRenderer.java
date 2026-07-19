@@ -1,8 +1,6 @@
 package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -14,9 +12,11 @@ import com.badlogic.gdx.math.MathUtils;
 // klassischen Blob-Autotiling (bis zu 47), und kein natives Tiled-Feature, daher ein eigener
 // Rendering-Layer statt eines Tiled-"Wang Sets".
 //
-// Isolierter Prototyp (Quest 7.8): bekommt sein Daten-Gitter direkt übergeben (z.B. fest im
-// Code hinterlegt zum Testen), OHNE jede Tiled-Anbindung - die kommt erst in Quest 7.9, wenn
-// die konkrete Layer-Konvention gemeinsam entworfen wird.
+// Echte Kunst (seit Quest 7.10): EINE Aseprite-Datei, 128x128 pro Frame - jeder Frame ist ein
+// KOMPLETTES Bild mit allen 16 Kacheln in einer festen 4x4-Matrix (Zeile = mask/4, Spalte =
+// mask%4), keine einzelnen Tags pro Kachel. Alle 16 Kacheln animieren dadurch automatisch
+// synchron zueinander (z.B. eine gemeinsame Wasser-Ripple-Animation), nicht unabhängig
+// versetzt - siehe update()/render().
 public class DualGridTerrainRenderer {
 
     private static final int TILE_SIZE = 32;
@@ -26,20 +26,38 @@ public class DualGridTerrainRenderer {
     private final int gridWidth;
     private final int gridHeight;
 
-    private final Texture[] lookupTextures;
-    private final TextureRegion[] lookupRegions;
+    private final AsepriteSpriteSheet terrainSpriteSheet;
+    private final Animation[] lookupAnimations;
+    // Frei laufender, gemeinsamer Zeit-Akkumulator für ALLE 16 Kacheln - sorgt dafür, dass sie
+    // synchron animieren statt jede für sich unabhängig
+    private float elapsedTime;
 
     public DualGridTerrainRenderer(boolean[][] isGap) {
         this.isGap = isGap;
         this.gridWidth = isGap.length;
         this.gridHeight = isGap[0].length;
 
-        this.lookupTextures = new Texture[16];
-        this.lookupRegions = new TextureRegion[16];
+        this.terrainSpriteSheet = new AsepriteSpriteSheet("terrain_dualgrid.png", "terrain_dualgrid.json");
+        TextureRegion[] sheetFrames = terrainSpriteSheet.getAllFrameRegions(); // je ein komplettes 128x128-Bild
+        float[] sheetDurations = terrainSpriteSheet.getAllFrameDurations();
+
+        this.lookupAnimations = new Animation[16];
         for (int mask = 0; mask < 16; mask++) {
-            lookupTextures[mask] = createLookupTexture(mask);
-            lookupRegions[mask] = new TextureRegion(lookupTextures[mask]);
+            int col = mask % 4;
+            int row = mask / 4;
+
+            TextureRegion[] maskFrames = new TextureRegion[sheetFrames.length];
+            for (int frameIndex = 0; frameIndex < sheetFrames.length; frameIndex++) {
+                // Unter-Bereich INNERHALB des jeweiligen Sheet-Frames herausschneiden
+                maskFrames[frameIndex] = new TextureRegion(sheetFrames[frameIndex], col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+            lookupAnimations[mask] = new Animation(maskFrames, sheetDurations);
         }
+    }
+
+    // Läuft unabhängig von render() - siehe Room.update()/Main.render()
+    public void update(float deltaTime) {
+        elapsedTime += deltaTime;
     }
 
     // Clamp-to-Edge: Zellen außerhalb des Gitters übernehmen den Wert der nächstgelegenen
@@ -61,7 +79,8 @@ public class DualGridTerrainRenderer {
                 // Eck-Schnittpunkt (rx, ry) des Daten-Gitters, nicht auf einer Daten-Zelle selbst
                 float drawX = rx * TILE_SIZE - TILE_SIZE / 2f;
                 float drawY = ry * TILE_SIZE - TILE_SIZE / 2f;
-                batch.draw(lookupRegions[mask], drawX, drawY, TILE_SIZE, TILE_SIZE);
+                TextureRegion frame = lookupAnimations[mask].getFrameByElapsedTime(elapsedTime);
+                batch.draw(frame, drawX, drawY, TILE_SIZE, TILE_SIZE);
             }
         }
     }
@@ -81,9 +100,9 @@ public class DualGridTerrainRenderer {
         }
     }
 
-    // Bitmask-Konvention (muss zu createLookupTexture() passen): bottomLeft = Bit 0 (Wert 1),
-    // bottomRight = Bit 1 (Wert 2), topLeft = Bit 2 (Wert 4), topRight = Bit 3 (Wert 8) - ist
-    // ein Bit gesetzt, bedeutet das "diese Ecke ist Lücke".
+    // Bitmask-Konvention (muss zur Kachel-Anordnung im Tileset passen, siehe ART_SPEC.md):
+    // bottomLeft = Bit 0 (Wert 1), bottomRight = Bit 1 (Wert 2), topLeft = Bit 2 (Wert 4),
+    // topRight = Bit 3 (Wert 8) - ist ein Bit gesetzt, bedeutet das "diese Ecke ist Lücke".
     private int computeMask(int rx, int ry) {
         // Eck-Schnittpunkt (rx, ry) grenzt an genau diese 4 Daten-Zellen
         boolean bottomLeft = isGapAt(rx - 1, ry - 1);
@@ -105,35 +124,7 @@ public class DualGridTerrainRenderer {
         return ret;
     }
 
-    // Platzhalter-Kachel für EINE der 16 Kombinationen: viertelt das Bild und färbt jedes
-    // Viertel passend zur jeweiligen Ecke ein (Boden/Lücke) - macht die Bitmask-Logik visuell
-    // nachprüfbar, ganz ohne echte Pixelart (echte Kunst ersetzt das später in Quest 7.10)
-    private Texture createLookupTexture(int mask) {
-        Pixmap pixmap = new Pixmap(TILE_SIZE, TILE_SIZE, Pixmap.Format.RGBA8888);
-        int half = TILE_SIZE / 2;
-
-        Color ground = new Color(0.45f, 0.6f, 0.25f, 1f);
-        Color gap = new Color(0.25f, 0.45f, 0.75f, 1f);
-
-        // Pixmap-Koordinaten: y=0 ist oben (anders als unser Y-nach-oben-Weltkoordinatensystem!)
-        // - "topLeft"/"topRight" landen deshalb bei y=0, "bottomLeft"/"bottomRight" bei y=half
-        pixmap.setColor((mask & 4) != 0 ? gap : ground); // topLeft
-        pixmap.fillRectangle(0, 0, half, half);
-        pixmap.setColor((mask & 8) != 0 ? gap : ground); // topRight
-        pixmap.fillRectangle(half, 0, half, half);
-        pixmap.setColor((mask & 1) != 0 ? gap : ground); // bottomLeft
-        pixmap.fillRectangle(0, half, half, half);
-        pixmap.setColor((mask & 2) != 0 ? gap : ground); // bottomRight
-        pixmap.fillRectangle(half, half, half, half);
-
-        Texture texture = new Texture(pixmap);
-        pixmap.dispose();
-        return texture;
-    }
-
     public void dispose() {
-        for (Texture texture : lookupTextures) {
-            texture.dispose();
-        }
+        terrainSpriteSheet.dispose();
     }
 }

@@ -33,9 +33,11 @@ Fehlt ein Tag (noch) in der Datei, bleibt für diesen Zustand automatisch der bi
 
 Der Gegner hat (Stand 2026-07-16) noch **keine** Norden-Variante, nur die ursprünglichen 5 Zustände — 5 Zeilen × 3 Spalten, 96×160px, gleiches Reihenfolge-Prinzip wie beim Spieler (Idle/Walk/Attack/Hurt/Death), nur der 1 aktuell umgesetzte Gegner-Typ, eigener Stil/Farbgebung zur Unterscheidung vom Spieler.
 
-## 3. Dual-Grid-Terrain-Tileset (`terrain_dualgrid.png`)
+## 3. Dual-Grid-Terrain-Tileset (`terrain_dualgrid.png` + `terrain_dualgrid.json`)
 
-Ein Tileset, **4 Zeilen × 4 Spalten**, jede Kachel 32×32px → Gesamtgröße **128×128px**. Jede der 16 Kacheln entspricht einer Bitmask 0–15 (siehe `DualGridTerrainRenderer`), Position im Raster = `Zeile = mask / 4`, `Spalte = mask % 4`.
+**Aktualisiert 2026-07-19: animiert, ohne Tags.** Eine Aseprite-Datei, Canvas **128×128px** (4×4-Raster à 32×32px), Position im Raster = `Zeile = mask / 4`, `Spalte = mask % 4`, passend zu den 16 Bitmask-Werten (siehe `DualGridTerrainRenderer`). Anders als beim Spieler-Sheet gibt es hier **keine Tags** — jeder Frame in der Timeline ist ein VOLLSTÄNDIGES 128×128-Bild mit allen 16 Kacheln zugleich (z.B. 4 Frames für eine Wasser-Ripple-Animation). Export genauso wie beim Spieler (`File > Export Sprite Sheet`, Data File an, Trim aus) - die beiden Dateien liegen unter `assets/`. `DualGridTerrainRenderer` schneidet aus jedem Sheet-Frame die 16 Kachel-Unterbereiche einmalig heraus und spielt sie über einen gemeinsamen Zeit-Zähler synchron ab (alle 16 Kacheln animieren zusammen, nicht unabhängig versetzt).
+
+Jede Kachel ist geviertelt (oben-links/oben-rechts/unten-links/unten-rechts), pro Viertel entweder **Boden** oder **Lücke/Wasser** je nach gesetztem Bit:
 
 Jede Kachel ist geviertelt (oben-links/oben-rechts/unten-links/unten-rechts), pro Viertel entweder **Boden** oder **Lücke/Wasser** je nach gesetztem Bit:
 
@@ -60,7 +62,7 @@ Jede Kachel ist geviertelt (oben-links/oben-rechts/unten-links/unten-rechts), pr
 
 Für nahtlose Übergänge zwischen benachbarten Kacheln sollten sich die Ränder der Boden- und Lücken-Zeichnung an den Kachel-Grenzen treffen (z.B. eine Wasserkante, die an der Kachel-Mitte beginnt/endet).
 
-**Tile-Extrusion** (1px Rand-Bleeding um jede Kachel gegen Nahtlinien bei skaliertem Rendering, siehe ROADMAP Quest 7) wird beim Zuschneiden im Code nachgezogen (Slicing-Logik muss dafür beim Kunst-Tausch angepasst werden, aktuell lädt `DualGridTerrainRenderer` noch 16 laufzeit-generierte Platzhalter statt eines echten Tilesets - das Zuschneiden aus einem Sheet ist selbst noch zu bauen, keine reine Asset-Ersetzung).
+**Tile-Extrusion** (1px Rand-Bleeding um jede Kachel gegen Nahtlinien bei skaliertem Rendering, siehe ROADMAP Quest 7) ist mit der aktuellen Zuschneide-Logik in `DualGridTerrainRenderer` noch NICHT berücksichtigt (schneidet exakt an den 32px-Grenzen, ohne Rand-Puffer) - bei sichtbaren Nahtlinien im echten Spiel müsste das Zuschneiden entsprechend angepasst werden.
 
 ## 4. Wände (`tileset_placeholder.png`, wird ersetzt)
 

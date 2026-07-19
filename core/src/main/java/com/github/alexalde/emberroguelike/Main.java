@@ -176,6 +176,8 @@ public class Main extends ApplicationAdapter {
         // Läuft IMMER, auch nach Game Over (siehe Player.updateAnimation()) - sonst würde z.B.
         // die spätere Death-Animation beim Einfrieren der restlichen Logik sofort mit einfrieren
         player.updateAnimation(deltaTime);
+        // Treibt die Dual-Grid-Terrain-Animation an (rein kosmetisch, siehe Room.update())
+        room.update(deltaTime);
 
         // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
         if (!gameOver) {
