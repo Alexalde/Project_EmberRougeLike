@@ -70,9 +70,9 @@ Für nahtlose Übergänge zwischen benachbarten Kacheln sollten sich die Ränder
 
 Der alte, einfache Wand-Ansatz (`tileset_placeholder.png`, Kachel-ID 2) bleibt als nicht mehr gerenderte Fallback-Daten im `Ground_LEGACY_unused`-Layer von `testmap.tmx` liegen (siehe ROADMAP für geplantes Aufräumen).
 
-## 5. Healthbar (`healthbar_frame.png` / `healthbar_fill.png`)
+## 5. Healthbar (`healthbar_empty.png` / `healthbar_full.png`)
 
-Verfeinerter, aber nicht finaler Platzhalter (siehe Vertical-Slice-Scope). Aktuelle Platzhalter-Maße in `Healthbar.java`: Rahmen 100×12px, 2px Rand. Reale Kunst kann diese Maße beibehalten oder der Code wird entsprechend angepasst — das ist beim Kunst-Tausch selbst zu entscheiden, keine feste Vorgabe.
+**Aktualisiert 2026-07-20:** Zwei statische Bilder, **jede beliebige Größe funktioniert** (Code liest Breite/Höhe direkt aus der Textur, keine feste Vorgabe) - kein Aseprite-JSON-Export nötig (noch nicht animiert, siehe ROADMAP-Backlog). `healthbar_empty.png` ist der immer voll sichtbare Rahmen/Hintergrund, `healthbar_full.png` die Füllung - wird nicht gestreckt, sondern von links nach rechts aufgedeckt (Textur-Ausschnitt), je nach Lebens-Anteil. Beide Bilder sollten dieselben Pixel-Maße haben. Transparenter Rand in `healthbar_full.png` (falls vorhanden) wird automatisch erkannt und beim Aufdecken korrekt berücksichtigt (siehe `Healthbar.findContentLeftEdge()`/`findContentRightEdge()`) - kein manuelles Anpassen nötig, wenn die Grafik später ersetzt wird.
 
 ## Datei-Ablage
 
