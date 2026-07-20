@@ -27,7 +27,11 @@ public class Room {
     // null, wenn dieser Raum (noch) keinen "TerrainData"-Layer hat (siehe Konstruktor) - bewusst
     // nur EIN Raum (testmap.tmx) für Quest 7.9 umgebaut, volle Netzwerk-Migration ist Non-Goal
     // dieser Quest (siehe ROADMAP)
-    private DualGridTerrainRenderer terrainRenderer;
+    private DualGridRenderer terrainRenderer;
+    // Wände als EIGENES, unabhängiges Dual-Grid (seit 2026-07-19, siehe ROADMAP) - eigenes
+    // Daten-Gitter ("WallData") und eigenes Tileset, damit Wand-Kunst nicht pro Boden-Typ neu
+    // angepasst werden muss. null, wenn dieser Raum (noch) keinen "WallData"-Layer hat.
+    private DualGridRenderer wallRenderer;
 
     public Room(String tmxPath) {
         this.map = new TmxMapLoader().load(tmxPath);
@@ -42,7 +46,17 @@ public class Room {
 
         MapLayer terrainDataLayer = map.getLayers().get("TerrainData");
         if (terrainDataLayer != null) {
-            this.terrainRenderer = new DualGridTerrainRenderer(parseTerrainGrid((TiledMapTileLayer) terrainDataLayer));
+            this.terrainRenderer = new DualGridRenderer(parseBooleanGrid((TiledMapTileLayer) terrainDataLayer), "terrain_dualgrid.png", "terrain_dualgrid.json");
+        }
+
+        MapLayer wallDataLayer = map.getLayers().get("WallData");
+        if (wallDataLayer != null) {
+            boolean[][] wallGrid = parseBooleanGrid((TiledMapTileLayer) wallDataLayer);
+            // Wand-Tileset hat Wand/Transparent-Viertel vertauscht gezeichnet (gefunden
+            // 2026-07-20) - Gitter komplett umkehren ergibt exakt dieselbe Wirkung wie "jede
+            // Kachel zeigt die Gegenkombination", ohne dass die Kunst neu gezeichnet werden muss
+            invertGrid(wallGrid);
+            this.wallRenderer = new DualGridRenderer(wallGrid, "walls_dualgrid.png", "walls_dualgrid.json");
         }
 
         // libGDX' TmxMapLoader flippt Objekt-Y-Koordinaten beim Laden bereits selbst (anders als
@@ -91,58 +105,76 @@ public class Room {
     }
 
     // Läuft jeden Frame (siehe Main.render()), unabhängig davon ob Game Over ist - treibt die
-    // Dual-Grid-Terrain-Animation an (z.B. Wasser-Ripple), rein kosmetisch, kein Gameplay-Bezug
+    // Dual-Grid-Animationen an (z.B. Wasser-Ripple), rein kosmetisch, kein Gameplay-Bezug
     public void update(float deltaTime) {
         if (terrainRenderer != null) {
             terrainRenderer.update(deltaTime);
         }
+        if (wallRenderer != null) {
+            wallRenderer.update(deltaTime);
+        }
     }
 
-    // Liest den "TerrainData"-Layer manuell aus (Boden/Lücke pro Zelle) - dieser Layer wird
-    // NIE direkt vom OrthogonalTiledMapRenderer gerendert, siehe render() unten
-    private boolean[][] parseTerrainGrid(TiledMapTileLayer terrainDataLayer) {
-        int width = terrainDataLayer.getWidth();
-        int height = terrainDataLayer.getHeight();
-        boolean[][] isGap = new boolean[width][height];
+    // Liest einen Dual-Grid-Daten-Layer manuell aus ("TerrainData" oder "WallData", je eine
+    // Zelle pro Kachel) - diese Layer werden NIE direkt vom OrthogonalTiledMapRenderer
+    // gerendert, siehe render() unten
+    private boolean[][] parseBooleanGrid(TiledMapTileLayer dataLayer) {
+        int width = dataLayer.getWidth();
+        int height = dataLayer.getHeight();
+        boolean[][] grid = new boolean[width][height];
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                // Konvention aus dem "TerrainData"-Layer in testmap.tmx: Kachel-ID 1 = Boden, Kachel-ID 2 = Lücke
-                int tileId = terrainDataLayer.getCell(x, y).getTile().getId();
-                if (tileId == 2){
-                    isGap[x][y] = true;
-                } else {
-                    isGap[x][y] = false;
-                }
+                // Konvention (siehe ART_SPEC.md): Kachel-ID 1 = false (Boden/begehbar), Kachel-ID 2 = true (Lücke/Wand)
+                int tileId = dataLayer.getCell(x, y).getTile().getId();
+                grid[x][y] = tileId == 2;
             }
         }
 
-        return isGap;
+        return grid;
+    }
+
+    private void invertGrid(boolean[][] grid) {
+        for (int x = 0; x < grid.length; x++) {
+            for (int y = 0; y < grid[x].length; y++) {
+                grid[x][y] = !grid[x][y];
+            }
+        }
     }
 
     public void render(OrthographicCamera camera) {
         renderer.setView(camera);
 
-        if (terrainRenderer != null) {
-            // Boden zuerst zeichnen - über den vom TiledMapRenderer intern verwendeten Batch
-            // (spart ein zusätzliches SpriteBatch-Objekt), DANACH erst renderer.render() für die
-            // Wände aus "Ground" - so liegen die Wände sichtbar über dem Boden
+        if (terrainRenderer != null || wallRenderer != null) {
+            // Boden zuerst zeichnen, danach Wände obendrauf - über den vom TiledMapRenderer
+            // intern verwendeten Batch (spart ein zusätzliches SpriteBatch-Objekt)
             Batch batch = renderer.getBatch();
             batch.begin();
-            terrainRenderer.render(batch);
+            if (terrainRenderer != null) {
+                terrainRenderer.render(batch);
+            }
+            if (wallRenderer != null) {
+                wallRenderer.render(batch);
+            }
             batch.end();
         }
 
-        // Nur Layer 0 ("Ground", nach dem TerrainData-Umbau nur noch Wand-Kacheln) rendern lassen
-        // - funktioniert unverändert für Räume OHNE TerrainData-Layer (dort ist Layer 0 weiterhin
-        // der einzige Tile-Layer mit vollständigen Boden+Wand-Daten wie bisher)
-        renderer.render(new int[]{0});
+        // Der alte "Ground"-Layer (einzelne, nicht-autogekachelte Wand-Tiles) wird nur noch für
+        // Räume OHNE eigenes Wand-Dual-Grid gerendert - sonst würden sich beide Wand-Systeme
+        // überlappen. Für testmap.tmx bleiben die alten Wand-Daten bewusst noch in der Datei
+        // liegen (als Fallback, klar als "Legacy" markiert), werden aber nicht mehr gezeichnet.
+        if (wallRenderer == null) {
+            renderer.render(new int[]{0});
+        }
     }
 
-    // Debug: Kachel-Gitter des Dual-Grid-Terrains, umschaltbar über DebugSettings.renderTerrainDebug
+    // Debug: Kachel-Gitter der Dual-Grid-Systeme, umschaltbar über DebugSettings.renderTerrainDebug
     public void renderTerrainDebug(ShapeRenderer shapeRenderer) {
         if (terrainRenderer != null) {
             terrainRenderer.renderDebugGrid(shapeRenderer);
+        }
+        if (wallRenderer != null) {
+            wallRenderer.renderDebugGrid(shapeRenderer);
         }
     }
 
@@ -153,6 +185,9 @@ public class Room {
         }
         if (terrainRenderer != null) {
             terrainRenderer.dispose();
+        }
+        if (wallRenderer != null) {
+            wallRenderer.dispose();
         }
     }
 

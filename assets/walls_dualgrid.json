@@ -1,0 +1,42 @@
+{ "frames": {
+   "wall_dualgrid 0.aseprite": {
+    "frame": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "sourceSize": { "w": 128, "h": 128 },
+    "duration": 100
+   },
+   "wall_dualgrid 1.aseprite": {
+    "frame": { "x": 128, "y": 0, "w": 128, "h": 128 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 128, "h": 128 },
+    "sourceSize": { "w": 128, "h": 128 },
+    "duration": 100
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.17.2-dev",
+  "image": "walls_dualgrid.png",
+  "format": "RGBA8888",
+  "size": { "w": 256, "h": 128 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "Wall" },
+   { "name": "Layer 1", "group": "Wall", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 6", "group": "Wall", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 4", "group": "Wall", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 2", "group": "Wall", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 3", "group": "Wall", "opacity": 255, "blendMode": "normal" },
+   { "name": "Layer 7", "group": "Wall", "opacity": 255, "blendMode": "normal" },
+   { "name": "Wall Copy" },
+   { "name": "Layer 1", "group": "Wall Copy", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

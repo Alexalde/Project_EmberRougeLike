@@ -62,11 +62,13 @@ Jede Kachel ist geviertelt (oben-links/oben-rechts/unten-links/unten-rechts), pr
 
 Für nahtlose Übergänge zwischen benachbarten Kacheln sollten sich die Ränder der Boden- und Lücken-Zeichnung an den Kachel-Grenzen treffen (z.B. eine Wasserkante, die an der Kachel-Mitte beginnt/endet).
 
-**Tile-Extrusion** (1px Rand-Bleeding um jede Kachel gegen Nahtlinien bei skaliertem Rendering, siehe ROADMAP Quest 7) ist mit der aktuellen Zuschneide-Logik in `DualGridTerrainRenderer` noch NICHT berücksichtigt (schneidet exakt an den 32px-Grenzen, ohne Rand-Puffer) - bei sichtbaren Nahtlinien im echten Spiel müsste das Zuschneiden entsprechend angepasst werden.
+**Tile-Extrusion** (1px Rand-Bleeding um jede Kachel gegen Nahtlinien bei skaliertem Rendering, siehe ROADMAP Quest 7) ist mit der aktuellen Zuschneide-Logik in `DualGridRenderer` noch NICHT berücksichtigt (schneidet exakt an den 32px-Grenzen, ohne Rand-Puffer) - bei sichtbaren Nahtlinien im echten Spiel müsste das Zuschneiden entsprechend angepasst werden.
 
-## 4. Wände (`tileset_placeholder.png`, wird ersetzt)
+## 4. Wände (`walls_dualgrid.png` + `walls_dualgrid.json`)
 
-Einfach, nicht autogekachelt (siehe Scope-Entscheidung) — eine einzelne Wand-Kachel reicht, ersetzt Kachel-ID 2 im bestehenden 2-Kacheln-Tileset (64×32px, 2×32×32-Raster). Kachel-ID 1 (bisher Boden) wird für `testmap.tmx` nicht mehr gebraucht, bleibt aber für die anderen, noch nicht auf Dual-Grid umgestellten Räume relevant (siehe ROADMAP Quest 7.9 Non-Goal).
+**Aktualisiert 2026-07-19: Scope-Änderung, Wände sind jetzt auch Dual-Grid** (kehrt die frühere "einfache, nicht-autogekachelte Wände"-Entscheidung um, siehe ROADMAP) - eigenes, komplett unabhängiges Dual-Grid-System von Boden/Terrain (eigenes Daten-Gitter `"WallData"` in Tiled, eigenes Tileset), damit Wand-Kunst nicht pro Boden-Typ neu angepasst werden muss. Exakt derselbe Aufbau wie beim Terrain-Tileset (Abschnitt 3): 128×128px Canvas, 4×4-Raster (`Zeile = mask/4`, `Spalte = mask%4`), keine Tags, jeder Frame ein komplettes Bild mit allen 16 Kombinationen. `true`/Bit gesetzt bedeutet hier "Wand" statt "Lücke/Wasser" - Bitmask-Tabelle aus Abschnitt 3 gilt unverändert (nur "Lücke" gedanklich durch "Wand" ersetzen). Muss nicht zwingend animiert sein (ein einzelner Frame reicht, der Code kommt mit beliebiger Frame-Anzahl klar).
+
+Der alte, einfache Wand-Ansatz (`tileset_placeholder.png`, Kachel-ID 2) bleibt als nicht mehr gerenderte Fallback-Daten im `Ground_LEGACY_unused`-Layer von `testmap.tmx` liegen (siehe ROADMAP für geplantes Aufräumen).
 
 ## 5. Healthbar (`healthbar_frame.png` / `healthbar_fill.png`)
 
