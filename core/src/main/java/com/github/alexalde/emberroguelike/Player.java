@@ -302,6 +302,12 @@ public class Player {
             facingUp = true;
         } else if (direction.y < 0) {
             facingUp = false;
+        } else if (direction.x != 0) {
+            // Reine Horizontalbewegung (kein Y-Anteil): explizit auf Süden zurücksetzen statt
+            // eine evtl. vorher aktive Norden-Blickrichtung stehen zu lassen. Nur bei komplettem
+            // Stillstand (direction == (0,0)) bleibt facingUp unverändert, damit Idle-North nach
+            // dem Anhalten weiterhin erreichbar ist.
+            facingUp = false;
         }
     }
 

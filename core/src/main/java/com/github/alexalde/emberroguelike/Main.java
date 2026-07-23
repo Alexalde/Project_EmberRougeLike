@@ -136,7 +136,11 @@ public class Main extends ApplicationAdapter {
             camY = MathUtils.clamp(playerCenter.y, halfViewHeight, room.getPixelHeight() - halfViewHeight);
         }
 
-        camera.position.set(camX, camY, 0);
+        // Auf ganze Pixel runden (analog zum Pixel-Snapping bei Player/Enemy/Door, Quest 7.1) -
+        // sonst läge die Kamera bei laufender Bewegung auf einem sich ständig ändernden
+        // Sub-Pixel-Offset, wodurch selbst pixelgenau gerundete Sprites beim Scrollen wieder
+        // zittern/verschwimmen (Welt->Bildschirm-Projektion verschiebt dann alles minimal)
+        camera.position.set(MathUtils.round(camX), MathUtils.round(camY), 0);
         camera.update();
     }
 
@@ -265,6 +269,12 @@ public class Main extends ApplicationAdapter {
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             player.drawHitboxDebug(shapeRenderer);
+            shapeRenderer.end();
+
+            // Eigener Line-Durchgang für die Enemy-Hurtbox - als Kontur statt gefüllter Fläche,
+            // sonst verdeckt der Kreis den darunterliegenden Sprite komplett (siehe Filled oben,
+            // lässt sich nicht innerhalb desselben begin()/end() mit Line mischen)
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             for (Enemy enemy : enemies) {
                 enemy.drawHitboxDebug(shapeRenderer);
             }

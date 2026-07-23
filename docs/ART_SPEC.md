@@ -29,9 +29,23 @@ Frame-Anzahl pro Tag ist bewusst NICHT mehr festgelegt (z.B. Idle hat aktuell 14
 
 Fehlt ein Tag (noch) in der Datei, bleibt für diesen Zustand automatisch der bisherige Pixmap-Platzhalter aktiv (siehe `Player`-Konstruktor, `orPlaceholder()`) - du kannst also Tag für Tag nachliefern, ohne dass der Rest wartet.
 
-## 2. Gegner-Sprite-Sheet (`enemy_spritesheet.png`)
+## 2. Gegner-Sprite-Sheet (`enemy_spritesheet.png` + `enemy_spritesheet.json`)
 
-Der Gegner hat (Stand 2026-07-16) noch **keine** Norden-Variante, nur die ursprünglichen 5 Zustände — 5 Zeilen × 3 Spalten, 96×160px, gleiches Reihenfolge-Prinzip wie beim Spieler (Idle/Walk/Attack/Hurt/Death), nur der 1 aktuell umgesetzte Gegner-Typ, eigener Stil/Farbgebung zur Unterscheidung vom Spieler.
+**Aktualisiert 2026-07-21: erster echter Gegner-Typ ist ein Slime** (rein Gameplay-inspiriert von "Ember Knights", NICHT Art-Direction — eigener Stil). Gleiches Tag-basiertes Workflow wie beim Spieler (Abschnitt 1): eine Aseprite-Datei, EINE fortlaufende Timeline, jede Animation als eigener Tag markiert, Export über `File > Export Sprite Sheet` mit **Data File an, Trim aus**. Frame-Größe **32×32px** (`Enemy.SPRITE_WIDTH/HEIGHT`, unverändert von den Platzhaltern).
+
+Noch **keine** Norden-Variante (nur eine Blickrichtung, passend zum aktuellen Scope) - horizontale Spiegelung analog zum Spieler wäre der nächste Schritt, aber (Stand 2026-07-21) noch nicht verdrahtet, da der Gegner bisher ungespiegelt gezeichnet wird.
+
+**Exakte Tag-Namen** (genau wie beim Spieler-Sheet muss Groß-/Kleinschreibung und Bindestrich stimmen):
+
+| Tag-Name | Zustand |
+|---|---|
+| `Idle` | Idle |
+| `Walk` | Laufen/Verfolgen |
+| `Attack` | Angriff |
+| `Hurt` | Getroffen |
+| `Death` | Sterben |
+
+Fehlt ein Tag (noch), bleibt die bisherige laufzeit-generierte Platzhalter-Farbe für diesen Zustand aktiv (siehe `Enemy`-Konstruktor, gleiches `orPlaceholder()`-Prinzip wie beim Spieler) - Tag für Tag nachlieferbar.
 
 ## 3. Dual-Grid-Terrain-Tileset (`terrain_dualgrid.png` + `terrain_dualgrid.json`)
 

@@ -1,5 +1,6 @@
 package com.github.alexalde.emberroguelike;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -23,8 +24,14 @@ public class Enemy {
     private static final int SPRITE_WIDTH = 32;
     private static final int SPRITE_HEIGHT = 32;
 
-    // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt
+    // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt.
+    // Bleibt null, sobald/sofern ALLE 5 Zustands-Tags in enemy_spritesheet.json existieren -
+    // dann werden keine Platzhalter mehr gebraucht (siehe Konstruktor/putStateAnimation()).
     private Texture[] animationTextures;
+    // Echte, von Aseprite exportierte Kunst (seit Quest 7.10, gleiches Prinzip wie Player) -
+    // Tags, die darin noch nicht existieren, liefern null und fallen auf die
+    // Platzhalter-Textur für diesen Zustand zurück (siehe putStateAnimation())
+    private AsepriteSpriteSheet enemySpriteSheet;
     private EnumMap<AnimationState, Animation> animations;
     private AnimationState currentAnimationState;
     private float animationTime;
@@ -95,6 +102,20 @@ public class Enemy {
             new TextureRegion(animationTextures[7]),
             new TextureRegion(animationTextures[8])
         }));
+        // Echte Kunst nur laden, wenn die Dateien bereits existieren (anders als beim Player,
+        // dessen Sheet zum Zeitpunkt der Verdrahtung schon vorlag) - AsepriteSpriteSheet würde
+        // sonst beim Textur-Laden crashen. Solange die Dateien fehlen, bleiben alle Zustände auf
+        // den obigen Platzhaltern; sobald sie da sind, übernimmt putRealAnimationIfExists() pro
+        // Tag einzeln (kein Alles-oder-nichts, genau wie beim Spieler)
+        if (Gdx.files.internal("enemy_spritesheet.png").exists() && Gdx.files.internal("enemy_spritesheet.json").exists()) {
+            this.enemySpriteSheet = new AsepriteSpriteSheet("enemy_spritesheet.png", "enemy_spritesheet.json");
+            putRealAnimationIfExists(AnimationState.IDLE, "Idle");
+            putRealAnimationIfExists(AnimationState.WALK, "Walk");
+            putRealAnimationIfExists(AnimationState.ATTACK, "Attack");
+            putRealAnimationIfExists(AnimationState.HURT, "Hurt");
+            putRealAnimationIfExists(AnimationState.DEATH, "Death");
+        }
+
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
         this.attackVisualDuration = 0.15f;
@@ -245,6 +266,15 @@ public class Enemy {
         return 0f;
     }
 
+    // real == null (Tag existiert noch nicht in der Aseprite-Datei) -> Platzhalter für diesen
+    // Zustand bleibt unverändert bestehen, sonst wird er durch die echte Kunst ersetzt
+    private void putRealAnimationIfExists(AnimationState state, String tagName) {
+        Animation real = enemySpriteSheet.getAnimation(tagName);
+        if (real != null) {
+            animations.put(state, real);
+        }
+    }
+
     private Texture createFrameTexture(Color color) {
         Pixmap pixmap = new Pixmap(SPRITE_WIDTH, SPRITE_HEIGHT, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
@@ -292,6 +322,9 @@ public class Enemy {
     public void dispose() {
         for (Texture frameTexture : animationTextures) {
             frameTexture.dispose();
+        }
+        if (enemySpriteSheet != null) {
+            enemySpriteSheet.dispose();
         }
     }
 }
