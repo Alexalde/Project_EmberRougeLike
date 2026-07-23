@@ -75,6 +75,18 @@ Zusätzlich gewünscht: Ein neues `GameSettings`-Feld (passend zur bestehenden S
 
 Entscheidung 2026-07-21: Der Nutzer zeichnet deshalb bewusst NICHT jetzt schon eine generische Player-Attack-Animation (und im selben Zug auch nicht Hurt, da beide zum "wie sieht der Charakter im Kampf aus"-Gesamtbild gehören) - er möchte erst wissen, wie die finalen Waffen-Sprites aussehen, um sich den Charakter im Kontext vorstellen zu können, bevor er Zeit in eine möglicherweise wegwerfbare generische Version investiert. Player bleibt bis dahin bei Idle/Walk/Death als einzigen echten Animationen, Attack/Hurt nutzen weiterhin den eingefärbten Idle-South-Platzhalter (siehe `Player`-Konstruktor, `putStateAnimation()`).
 
+## ⬜ Sidequest 1: Feste Wände und ein Blick unter die Haube
+Zwei Lücken, die beim Spieltest nach Quest 7 aufgefallen sind, unabhängig von Quest 8 angehbar (vermerkt 2026-07-21):
+
+- **Fertig wenn:** Spieler UND Gegner können nicht mehr durch Wände (`WallData`) oder Terrain-Lücken/Wasser (`TerrainData`) laufen; ein Debug-Overlay (`DebugSettings`-Flag) zeigt die wichtigsten Spieler-Stats (Health/MaxHealth, Speed, Dash-Cooldown) als Text im Spiel an.
+
+**SQ1.1 - Kollisionsabfrage in `Room` freilegen.** `DualGridRenderer` kennt sein `isSpecialCell`-Gitter bereits (dient aktuell nur dem Rendering) - bekommt eine neue öffentliche Methode, die eine WELT-Koordinate (nicht Gitter-Koordinate) entgegennimmt und intern durch `TILE_SIZE` teilt, dann die bestehende `isSpecialAt(gridX, gridY)`-Logik samt Clamp-to-Edge wiederverwendet. `Room` bekommt darauf aufbauend eine öffentliche `isBlocked(float worldX, float worldY)`, die `true` liefert, wenn entweder `wallRenderer` ODER `terrainRenderer` an dieser Stelle "speziell" ist (Wand bzw. Lücke/Wasser) - keine neue Daten-Kopie nötig, dieselbe Quelle wie das Rendering.
+
+**SQ1.2 - Player gegen Terrain kollidieren lassen.** Statt Bewegung direkt auf `position` anzuwenden, X und Y **getrennt** prüfen (Achsen-getrennte Sliding-Kollision, Standard-Technik für einfache Tilemap-Kollision): neue X-Position berechnen, per `room.isBlocked()` an allen 4 Ecken der Sprite-Bounding-Box prüfen, nur übernehmen wenn frei - danach dasselbe für Y. Ergebnis: Spieler rutscht an Wänden entlang, statt bei diagonaler Bewegung komplett stehenzubleiben, sobald nur eine Achse blockiert ist. Kollisions-Box bleibt vorerst die volle `SPRITE_WIDTH`/`SPRITE_HEIGHT`-Fläche (der separate Backlog-Punkt "Kollisionsbox passt nicht zur echten Sprite-Silhouette" von Quest 7 bleibt bewusst ein eigener, späterer Schritt).
+**SQ1.3 - Enemy gegen Terrain kollidieren lassen.** Exakt dieselbe Technik wie SQ1.2, auf `Enemy.update()` angewendet (Verfolgungs-Bewegung statt Input-Bewegung, aber dieselbe Achsen-Trennung + `room.isBlocked()`-Abfrage) - sonst würde die KI weiterhin durch Wände zum Spieler laufen.
+
+**SQ1.4 - Debug-Stat-Anzeige.** Neues `DebugSettings.renderStats`-Flag (gleiches Muster wie `renderHitboxes`/`renderTerrainDebug`). Text-Rendering ist neu im Projekt - libGDX' `BitmapFont` (Default-Konstruktor, kein eigenes Font-Asset nötig) im selben UI-Kamera-Zeichen-Durchgang wie die Healthbar. Zeigt vorerst Health/MaxHealth, Speed, Dash-Cooldown-Rest - bewusst nur Debug-Text, kein gestaltetes UI-Element (das käme, falls überhaupt gewünscht, erst in einem UI-Art-Pass).
+
 ## ⬜ Quest 8: Beute und Level-Ups
 In-Run-Progression: Raum-Belohnungen und Level-Up-System (siehe GDD 3.1).
 - Fertig wenn: Spieler bekommt nach Raum-Clear Belohnungsauswahl, kann durch XP/Ressourcen aufsteigen.
