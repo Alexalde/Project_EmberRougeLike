@@ -88,6 +88,16 @@ Der alte, einfache Wand-Ansatz (`tileset_placeholder.png`, Kachel-ID 2) bleibt a
 
 **Aktualisiert 2026-07-20:** Zwei statische Bilder, **jede beliebige Größe funktioniert** (Code liest Breite/Höhe direkt aus der Textur, keine feste Vorgabe) - kein Aseprite-JSON-Export nötig (noch nicht animiert, siehe ROADMAP-Backlog). `healthbar_empty.png` ist der immer voll sichtbare Rahmen/Hintergrund, `healthbar_full.png` die Füllung - wird nicht gestreckt, sondern von links nach rechts aufgedeckt (Textur-Ausschnitt), je nach Lebens-Anteil. Beide Bilder sollten dieselben Pixel-Maße haben. Transparenter Rand in `healthbar_full.png` (falls vorhanden) wird automatisch erkannt und beim Aufdecken korrekt berücksichtigt (siehe `Healthbar.findContentLeftEdge()`/`findContentRightEdge()`) - kein manuelles Anpassen nötig, wenn die Grafik später ersetzt wird.
 
+## 6. Terrain-Kollisionsbox (`Hitbox`-Tag, Spieler + Gegner)
+
+**Neu 2026-07-21 (Sidequest 1, Nutzer-Idee):** Statt die Kollisionsbox gegen Wände/Terrain-Lücken im Code fest zu verdrahten (z.B. als feste Pixel-Zahl), wird sie direkt aus der Kunst abgeleitet - visuell einstellbar, ohne Code anzufassen. Dafür in DERSELBEN Aseprite-Datei wie die Zustands-Animationen (`player_spritesheet`/`enemy_spritesheet`) einen zusätzlichen Tag namens **`Hitbox`** anlegen: EIN Frame reicht (nur der erste Frame dieses Tags wird ausgewertet), darauf einfarbig-opak (beliebige Farbe, nur der Alpha-Kanal zählt) genau die Fläche einzeichnen, die als Kollisionsbox gelten soll - typischerweise ein Rechteck um die "Standfläche"/Füße der Figur, deutlich kleiner als das volle Sprite-Quadrat.
+
+Wichtig: Dieselbe Canvas-Größe wie die restlichen Frames (48×48 beim Spieler, 32×32 beim Gegner), **Trim weiterhin deaktiviert** beim Export - sonst stimmen die Pixel-Koordinaten nicht mit der Zeichenposition überein. Der Code (`AsepriteSpriteSheet.getHitboxBounds()`) scannt den Alpha-Kanal dieses Frames nach dem sichtbaren Bereich (gleiche Technik wie bei der Healthbar) und leitet daraus ein Rechteck relativ zur Sprite-Zeichenposition ab.
+
+Fehlt der `Hitbox`-Tag (noch), fällt der Code automatisch auf die volle Sprite-Fläche zurück (bisheriges Verhalten) - kein Zwang, ihn sofort zu zeichnen. Zur Kontrolle gibt es ein gelbes Debug-Rechteck (`DebugSettings.renderHitboxes`, siehe `Player`/`Enemy.drawTerrainCollisionDebug()`), das exakt die tatsächlich verwendete Box zeigt.
+
+Nur EINE Box pro Entity (nicht pro Zustand/Tag) - für Wand-Kollision reicht eine gleichbleibende Standfläche, unabhängig von Idle/Walk/etc. Zustandsabhängige Boxen wären ein eigenes, größeres Feature (eher relevant für Angriffs-Hitboxen, die aber bereits ihr eigenes System haben - Schwert-Arc/Bogen-Treffer).
+
 ## Datei-Ablage
 
 Alle Dateien direkt unter `assets/` (wie die bisherigen Platzhalter), Namen wie oben genannt, damit der Code-Umbau in Quest 7.10 nur Konstanten-/Ladepfad-Änderungen braucht, keine Strukturänderungen.

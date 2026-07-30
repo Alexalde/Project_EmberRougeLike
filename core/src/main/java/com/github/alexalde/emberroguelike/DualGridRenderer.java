@@ -38,11 +38,23 @@ public class DualGridRenderer {
     // Frei laufender, gemeinsamer Zeit-Akkumulator für ALLE 16 Kacheln - sorgt dafür, dass sie
     // synchron animieren statt jede für sich unabhängig
     private float elapsedTime;
+    // true, wenn dieses Tileset die "besonders"/"nicht besonders"-Viertel pro Kachel vertauscht
+    // gezeichnet hat (z.B. walls_dualgrid.png, siehe ROADMAP 2026-07-20) - betrifft NUR, welche
+    // der 16 Kachel-Grafiken beim Rendern ausgewählt wird (render() nutzt dann 15-mask statt
+    // mask). isSpecialCell/isSpecialAt() selbst bleiben davon unberührt und behalten ihre echte
+    // Bedeutung ("true = besonderer Zellentyp") - wichtig, weil Room.isBlocked() (Sidequest 1)
+    // dieselben Daten für Kollision wiederverwendet und dafür die UNVERFÄLSCHTEN Werte braucht.
+    private final boolean invertMaskLookup;
 
     public DualGridRenderer(boolean[][] isSpecialCell, String pngPath, String jsonPath) {
+        this(isSpecialCell, pngPath, jsonPath, false);
+    }
+
+    public DualGridRenderer(boolean[][] isSpecialCell, String pngPath, String jsonPath, boolean invertMaskLookup) {
         this.isSpecialCell = isSpecialCell;
         this.gridWidth = isSpecialCell.length;
         this.gridHeight = isSpecialCell[0].length;
+        this.invertMaskLookup = invertMaskLookup;
 
         this.spriteSheet = new AsepriteSpriteSheet(pngPath, jsonPath);
         TextureRegion[] sheetFrames = spriteSheet.getAllFrameRegions(); // je ein komplettes 128x128-Bild
@@ -76,17 +88,32 @@ public class DualGridRenderer {
         return isSpecialCell[clampedX][clampedY];
     }
 
+    // Für Kollisionsabfragen (siehe Room.isBlocked(), Sidequest 1) - wandelt eine WELT-Koordinate
+    // (Pixel) in die zugehörige Daten-Gitter-Zelle um. Das Daten-Gitter selbst ist NICHT versetzt
+    // (nur das Render-Gitter ist eine halbe Kachel verschoben, siehe render()) - eine einfache
+    // Division durch TILE_SIZE reicht, dieselbe Clamp-to-Edge-Logik wie beim Rendering greift
+    // automatisch über isSpecialAt(). Keine eigene Kollisions-Datenkopie nötig.
+    public boolean isSpecialAtWorld(float worldX, float worldY) {
+        int gridX = (int) (worldX / TILE_SIZE);
+        int gridY = (int) (worldY / TILE_SIZE);
+        return isSpecialAt(gridX, gridY);
+    }
+
     public void render(Batch batch) {
         // Render-Gitter ist in jeder Achse eine Kachel GRÖSSER als das Daten-Gitter (<=, nicht <)
         // - eine Render-Kachel pro Eck-Schnittpunkt des Daten-Gitters, siehe computeMask()
         for (int rx = 0; rx <= gridWidth; rx++) {
             for (int ry = 0; ry <= gridHeight; ry++) {
                 int mask = computeMask(rx, ry);
+                // Komplementär-Kachel (15-mask) statt der "echten" Maske, falls dieses Tileset
+                // die Viertel vertauscht gezeichnet hat (siehe invertMaskLookup oben) - wirkt
+                // rein auf die Bild-Auswahl, NICHT auf die Kollisions-/Bitmask-Daten selbst
+                int lookupIndex = invertMaskLookup ? 15 - mask : mask;
                 // Versatz um eine halbe Kachel: die Render-Kachel liegt zentriert auf dem
                 // Eck-Schnittpunkt (rx, ry) des Daten-Gitters, nicht auf einer Daten-Zelle selbst
                 float drawX = rx * TILE_SIZE - TILE_SIZE / 2f;
                 float drawY = ry * TILE_SIZE - TILE_SIZE / 2f;
-                TextureRegion frame = lookupAnimations[mask].getFrameByElapsedTime(elapsedTime);
+                TextureRegion frame = lookupAnimations[lookupIndex].getFrameByElapsedTime(elapsedTime);
                 batch.draw(frame, drawX, drawY, TILE_SIZE, TILE_SIZE);
             }
         }
