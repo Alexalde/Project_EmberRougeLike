@@ -139,8 +139,8 @@ public class Player {
     // "room" liefert sowohl die Raum-Maße als auch die Terrain-Kollisionsabfrage (siehe
     // Sidequest 1) - ersetzt die vorherigen einzelnen roomWidth/roomHeight-Parameter
     public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition, Room room) {
-        sword.update(deltaTime, targets);
-        bow.update(deltaTime, targets);
+        sword.update(deltaTime, targets, stats);
+        bow.update(deltaTime, targets, stats);
 
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
@@ -178,9 +178,10 @@ public class Player {
             // Bewegung auf die Position anrechnen (mit Terrain-Kollision, siehe moveWithCollision())
             moveWithCollision(direction.x * speed * deltaTime, direction.y * speed * deltaTime, room);
 
-            // Cooldown läuft nur ab, während wir NICHT dashen
+            // Cooldown läuft nur ab, während wir NICHT dashen - skaliert mit cooldownReduction
+            // (siehe GDD 2.1, wirkt NUR auf den Dash, nicht auf Waffen-Cooldowns), 0 = unverändert
             if (dashCooldownRemaining > 0) {
-                dashCooldownRemaining -= deltaTime;
+                dashCooldownRemaining -= deltaTime * (1f + stats.cooldownReduction);
             }
 
             // Dash auslösen: frisch gedrückt, kein Cooldown mehr, und wir bewegen uns überhaupt
@@ -219,14 +220,14 @@ public class Player {
             boolean meleeInputActive = GameSettings.autoSwing
                     ? Gdx.input.isButtonPressed(GameSettings.meleeAttackButton)
                     : Gdx.input.isButtonJustPressed(GameSettings.meleeAttackButton);
-            if (meleeInputActive && sword.tryAttack(center, targetDirection, targets)) {
+            if (meleeInputActive && sword.tryAttack(center, targetDirection, targets, stats)) {
                 aimDirection = targetDirection;
             }
 
             boolean rangedInputActive = GameSettings.autoSwing
                     ? Gdx.input.isButtonPressed(GameSettings.rangedAttackButton)
                     : Gdx.input.isButtonJustPressed(GameSettings.rangedAttackButton);
-            if (rangedInputActive && bow.tryAttack(center, targetDirection, targets)) {
+            if (rangedInputActive && bow.tryAttack(center, targetDirection, targets, stats)) {
                 aimDirection = targetDirection;
             }
         }
