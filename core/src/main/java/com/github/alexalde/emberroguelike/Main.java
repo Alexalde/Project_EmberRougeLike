@@ -16,7 +16,9 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
@@ -28,9 +30,10 @@ public class Main extends ApplicationAdapter {
     // an derselben Bildschirmposition bleiben
     private OrthographicCamera uiCamera;
     private Healthbar healthbar;
-    // Reine Debug-Anzeige (Sidequest 1.4, DebugSettings.renderStats) - eingebaute Standard-
-    // Schrift (kein eigenes Font-Asset nötig), spätere eigene Pixel-Font siehe ROADMAP-Backlog
-    private BitmapFont debugFont;
+    // Eingebaute Standard-Schrift (kein eigenes Font-Asset nötig) - ursprünglich nur für die
+    // Sidequest-1.4-Debug-Anzeige gedacht, wird jetzt auch von RewardChoiceUI genutzt (daher kein
+    // "debug"-Name mehr). Spätere eigene Pixel-Font siehe ROADMAP-Backlog.
+    private BitmapFont uiFont;
 
     // Der tatsächliche, ganzzahlig skalierte und zentrierte Bildausschnitt auf dem echten Fenster
     private int viewportX, viewportY, viewportWidth, viewportHeight;
@@ -39,6 +42,17 @@ public class Main extends ApplicationAdapter {
     private Player player; // Hier ist unser Spieler-Objekt!
     private List<Enemy> enemies;
     private boolean gameOver;
+
+    // Beute-/Level-Up-System (siehe GDD 3.1/Quest 8) - itemPool liefert die ziehbaren Items,
+    // pendingRewardBatches sammelt ausgelöste, aber noch nicht angezeigte Auswahlrunden (mehrere
+    // Level-Ups im selben Frame sollen nicht verlorengehen), activeReward ist die gerade sichtbare
+    // Auswahl (null = keine). roomRewardGranted verhindert, dass derselbe Raum-Clear mehrfach
+    // belohnt wird; roomHadEnemies verhindert eine Belohnung für Räume ohne jeden Gegner.
+    private ItemPool itemPool;
+    private Queue<List<Item>> pendingRewardBatches;
+    private RewardChoiceUI activeReward;
+    private boolean roomRewardGranted;
+    private boolean roomHadEnemies;
 
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
@@ -58,7 +72,9 @@ public class Main extends ApplicationAdapter {
         uiCamera.setToOrtho(false, GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
         uiCamera.update();
         healthbar = new Healthbar();
-        debugFont = new BitmapFont();
+        uiFont = new BitmapFont();
+        itemPool = new ItemPool();
+        pendingRewardBatches = new LinkedList<>();
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -98,6 +114,12 @@ public class Main extends ApplicationAdapter {
         }
 
         gameOver = false;
+
+        // Beute-Zustand für den (neuen) Raum zurücksetzen - siehe roomHadEnemies/roomRewardGranted
+        roomHadEnemies = !enemies.isEmpty();
+        roomRewardGranted = false;
+        pendingRewardBatches.clear();
+        activeReward = null;
     }
 
     // Wechselt in einen anderen Raum durch eine Tür - Raum/Gegner werden komplett neu aufgebaut
@@ -117,6 +139,10 @@ public class Main extends ApplicationAdapter {
         for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
             enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
         }
+
+        // Beute-Zustand für den neuen Raum zurücksetzen (siehe startGame())
+        roomHadEnemies = !enemies.isEmpty();
+        roomRewardGranted = false;
     }
 
     // Kamera folgt dem Spieler, geklammert an die Raumgrenzen - ist der Raum in einer
@@ -188,8 +214,30 @@ public class Main extends ApplicationAdapter {
         // Treibt die Dual-Grid-Terrain-Animation an (rein kosmetisch, siehe Room.update())
         room.update(deltaTime);
 
-        // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
-        if (!gameOver) {
+        // Nächste Auswahlrunde aktivieren, falls gerade keine läuft (siehe pendingRewardBatches) -
+        // außerhalb des Pause-Gates unten, damit eine Runde auch sofort im selben Frame startet,
+        // in dem sie ausgelöst wurde
+        if (activeReward == null && !pendingRewardBatches.isEmpty()) {
+            activeReward = new RewardChoiceUI(pendingRewardBatches.poll());
+        }
+
+        // 1. Logik updaten - pausiert komplett, solange eine Beute-/Level-Up-Auswahl läuft (wie
+        // beim bestehenden Game-Over-Gate) ODER Game Over eingetreten ist
+        if (activeReward != null) {
+            // Maus-Position in uiCamera-Koordinaten (eigene Umrechnung, da die Karten in
+            // Bildschirm-fixen UI-Koordinaten liegen, nicht in Welt-Koordinaten wie mouseWorldPosition)
+            Vector3 uiMouseScreenCoords = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+            uiCamera.unproject(uiMouseScreenCoords, viewportX, viewportY, viewportWidth, viewportHeight);
+            Vector2 uiMousePosition = new Vector2(uiMouseScreenCoords.x, uiMouseScreenCoords.y);
+
+            activeReward.update(uiMousePosition);
+
+            Item confirmedChoice = activeReward.getConfirmedChoice();
+            if (confirmedChoice != null) {
+                confirmedChoice.apply(player.getStats());
+                activeReward = null;
+            }
+        } else if (!gameOver) {
             player.update(deltaTime, enemies, mouseWorldPosition, room);
 
             for (Enemy enemy : enemies) {
@@ -197,11 +245,18 @@ public class Main extends ApplicationAdapter {
             }
 
             // Entfernbare Gegner entfernen (tot UND Sterbeanimation fertig, siehe
-            // Enemy.isRemovable()): erst Texturen aufräumen (sonst Speicherleck), dann erst aus
-            // der Liste löschen (siehe ConcurrentModificationException-Thema von neulich - deshalb
-            // zwei getrennte Schritte statt Aufräumen mitten in der removeIf-Bedingung)
+            // Enemy.isRemovable()): erst XP vergeben + Texturen aufräumen (sonst Speicherleck),
+            // dann erst aus der Liste löschen (siehe ConcurrentModificationException-Thema von
+            // neulich - deshalb zwei getrennte Schritte statt Aufräumen mitten in der
+            // removeIf-Bedingung). Jeder dabei ausgelöste Level-Up reiht eine eigene
+            // Auswahlrunde ein (siehe pendingRewardBatches) - mehrere Level-Ups im selben Frame
+            // gehen dadurch nicht verloren, sondern werden nacheinander angezeigt.
             for (Enemy enemy : enemies) {
                 if (enemy.isRemovable()) {
+                    int levelUps = player.addXp(enemy.getXpValue());
+                    for (int i = 0; i < levelUps; i++) {
+                        pendingRewardBatches.add(itemPool.pickRandom(3));
+                    }
                     enemy.dispose();
                 }
             }
@@ -218,6 +273,13 @@ public class Main extends ApplicationAdapter {
                     switchRoom(door.getTargetRoom(), door.getTargetDoorName());
                     break; // "room"/"enemies" zeigen jetzt auf den neuen Raum - alte Türen-Liste nicht weiter durchgehen
                 }
+            }
+
+            // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8) - genau einmal pro Raumbesuch, nur für
+            // Räume, die überhaupt Gegner hatten
+            if (roomHadEnemies && !anyEnemyAlive && !roomRewardGranted) {
+                roomRewardGranted = true;
+                pendingRewardBatches.add(itemPool.pickRandom(3));
             }
 
             if (!player.isAlive()) {
@@ -274,10 +336,25 @@ public class Main extends ApplicationAdapter {
                 "HP: %.0f/%.0f\nSpeed: %.0f\nDash-CD: %.2f",
                 player.getHealth(), player.getMaxHealth(), player.getSpeed(), Math.max(0f, player.getDashCooldownRemaining())
             );
-            debugFont.draw(batch, statsText, 8f, 60f);
+            uiFont.draw(batch, statsText, 8f, 60f);
         }
 
         batch.end();
+
+        // Beute-/Level-Up-Auswahl (siehe GDD 3.1/Quest 8) - eigener uiCamera-Durchgang, Karten
+        // zuerst (ShapeRenderer), dann Text obendrauf (SpriteBatch), da beide APIs sich nicht im
+        // selben begin()/end() mischen lassen
+        if (activeReward != null) {
+            shapeRenderer.setProjectionMatrix(uiCamera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            activeReward.renderCards(shapeRenderer);
+            shapeRenderer.end();
+
+            batch.setProjectionMatrix(uiCamera.combined);
+            batch.begin();
+            activeReward.renderText(batch, uiFont);
+            batch.end();
+        }
 
         // Debug: exakte Hitbox-Form, umschaltbar über DebugSettings.renderHitboxes
         if (DebugSettings.renderHitboxes) {
@@ -323,6 +400,6 @@ public class Main extends ApplicationAdapter {
         }
         mouseDebugTexture.dispose();
         healthbar.dispose();
-        debugFont.dispose();
+        uiFont.dispose();
     }
 }
