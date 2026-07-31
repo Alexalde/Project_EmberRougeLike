@@ -27,6 +27,10 @@ public class Bow implements Weapon {
     private float attackVisualDuration;
     private float attackVisualTimeRemaining;
 
+    // Fächer-Winkel zwischen zusätzlichen Pfeilen bei projectileCount > 0 (siehe GDD 2.1) -
+    // rein kosmetisch, damit mehrere Pfeile nicht exakt übereinanderliegend fliegen
+    private static final float PROJECTILE_SPREAD_DEGREES = 10f;
+
     public Bow() {
         this.attackCooldownDuration = 0.5f;
         this.attackCooldownRemaining = 0f;
@@ -43,9 +47,10 @@ public class Bow implements Weapon {
     }
 
     @Override
-    public void update(float deltaTime, List<Enemy> targets) {
+    public void update(float deltaTime, List<Enemy> targets, PlayerStats stats) {
+        // Cooldown-Abbau skaliert mit attackSpeedMultiplier (siehe GDD 2.1), 1 = unverändert
         if (attackCooldownRemaining > 0) {
-            attackCooldownRemaining -= deltaTime;
+            attackCooldownRemaining -= deltaTime * stats.attackSpeedMultiplier;
         }
         if (attackVisualTimeRemaining > 0) {
             attackVisualTimeRemaining -= deltaTime;
@@ -57,11 +62,34 @@ public class Bow implements Weapon {
         activeProjectiles.removeIf(Projectile::isExpired);
     }
 
-    private void fire(Vector2 origin, Vector2 direction) {
+    private void fire(Vector2 origin, Vector2 direction, PlayerStats stats) {
         attackVisualTimeRemaining = attackVisualDuration;
-        activeProjectiles.add(
-            new Projectile(origin, direction, projectileSpeed, damage, maxRange, hitsPerProjectile, projectileHitboxRadius, projectileTexture)
-        );
+
+        // Der fertig verrechnete Schaden (Multiplikator + Crit-Roll, siehe
+        // PlayerStats.computeDamage()) wird EINMAL pro Schuss ermittelt und in jedes der
+        // gleichzeitig abgefeuerten Projektile fest eingebaut - passt zur bestehenden
+        // Projectile-Architektur (ein fester Schadenswert pro Projektil-Instanz)
+        float finalDamage = stats.computeDamage(damage, DamageType.PHYSICAL);
+        int totalProjectiles = 1 + stats.projectileCount;
+
+        for (int i = 0; i < totalProjectiles; i++) {
+            Vector2 projectileDirection = spreadDirection(direction, i, totalProjectiles);
+            activeProjectiles.add(
+                new Projectile(origin, projectileDirection, projectileSpeed, finalDamage, maxRange, hitsPerProjectile, projectileHitboxRadius, projectileTexture)
+            );
+        }
+    }
+
+    // Fächert mehrere gleichzeitige Projektile symmetrisch um die Zielrichtung auf (siehe
+    // projectileCount, GDD 2.1) - bei nur einem Projektil bleibt die Richtung unverändert
+    private Vector2 spreadDirection(Vector2 baseDirection, int index, int totalCount) {
+        if (totalCount <= 1) {
+            return baseDirection.cpy();
+        }
+
+        float offsetIndex = index - (totalCount - 1) / 2f;
+        float angleOffset = offsetIndex * PROJECTILE_SPREAD_DEGREES;
+        return baseDirection.cpy().rotateDeg(angleOffset);
     }
 
     @Override
@@ -76,13 +104,23 @@ public class Bow implements Weapon {
 
     // "targets" wird hier (noch) nicht direkt benutzt, gehört aber zur Signatur des Weapon-Interfaces
     @Override
-    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets) {
+    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets, PlayerStats stats) {
         if (attackCooldownRemaining <= 0) {
             attackCooldownRemaining = attackCooldownDuration;
-            fire(origin, direction);
+            fire(origin, direction, stats);
             return true;
         }
         return false;
+    }
+
+    @Override
+    public float getBaseDamage() {
+        return damage;
+    }
+
+    @Override
+    public DamageType getDamageType() {
+        return DamageType.PHYSICAL;
     }
 
     public void draw(SpriteBatch batch) {

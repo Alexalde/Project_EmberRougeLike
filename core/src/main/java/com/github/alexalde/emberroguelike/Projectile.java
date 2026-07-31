@@ -50,7 +50,7 @@ public class Projectile {
                 break;
             }
             if (target.isAlive() && target.isHitBy(position, hitboxRadius)) {
-                target.takeDamage((int) damage);
+                target.takeDamage(damage);
                 hitsRemaining--;
             }
         }

@@ -217,7 +217,9 @@ public class Enemy {
             || room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y + hitboxBounds.height - 1);
     }
 
-    public void takeDamage(int amount){
+    // float statt int (Quest 8.2) - passend zu Player.takeDamage(float) und Enemy.health
+    // (bereits float); vermeidet Präzisionsverlust nach der Stat-Verrechnung (Multiplikator/Crit)
+    public void takeDamage(float amount){
         this.health = this.health - amount;
 
         hurtTimeRemaining = HURT_ANIMATION_DURATION;
