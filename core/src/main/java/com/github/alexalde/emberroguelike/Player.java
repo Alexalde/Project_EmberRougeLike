@@ -88,10 +88,15 @@ public class Player {
     private float health;
     private float maxHealth;
 
+    // Zahlen-Charakterbogen (siehe GDD 2.1/Quest 8) - Items/Level-Ups verändern diese Werte über
+    // getStats(), statt direkt auf Player-interne Felder zuzugreifen
+    private PlayerStats stats;
+
     public Player(float startX, float startY) {
         this.position = new Vector2(startX, startY);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
+        this.stats = new PlayerStats();
 
         this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
 
@@ -302,6 +307,11 @@ public class Player {
 
     public float getDashCooldownRemaining() {
         return dashCooldownRemaining;
+    }
+
+    // Zahlen-Charakterbogen (siehe GDD 2.1/Quest 8) - Items/Level-Ups greifen hierüber zu
+    public PlayerStats getStats() {
+        return stats;
     }
 
     public Vector2 getCenter() {
