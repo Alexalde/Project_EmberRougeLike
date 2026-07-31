@@ -185,10 +185,10 @@ public class Main extends ApplicationAdapter {
 
         // 1. Logik updaten - läuft nicht mehr, sobald Game Over eingetreten ist
         if (!gameOver) {
-            player.update(deltaTime, enemies, mouseWorldPosition, room.getPixelWidth(), room.getPixelHeight());
+            player.update(deltaTime, enemies, mouseWorldPosition, room);
 
             for (Enemy enemy : enemies) {
-                enemy.update(deltaTime, player);
+                enemy.update(deltaTime, player, room);
             }
 
             // Entfernbare Gegner entfernen (tot UND Sterbeanimation fertig, siehe
@@ -273,10 +273,13 @@ public class Main extends ApplicationAdapter {
 
             // Eigener Line-Durchgang für die Enemy-Hurtbox - als Kontur statt gefüllter Fläche,
             // sonst verdeckt der Kreis den darunterliegenden Sprite komplett (siehe Filled oben,
-            // lässt sich nicht innerhalb desselben begin()/end() mit Line mischen)
+            // lässt sich nicht innerhalb desselben begin()/end() mit Line mischen). Zeigt hier
+            // auch gleich die Terrain-Kollisionsbox von Player + Enemy (Sidequest 1, gelb).
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+            player.drawTerrainCollisionDebug(shapeRenderer);
             for (Enemy enemy : enemies) {
                 enemy.drawHitboxDebug(shapeRenderer);
+                enemy.drawTerrainCollisionDebug(shapeRenderer);
             }
             shapeRenderer.end();
         }

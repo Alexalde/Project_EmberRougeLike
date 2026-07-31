@@ -53,10 +53,13 @@ public class Room {
         if (wallDataLayer != null) {
             boolean[][] wallGrid = parseBooleanGrid((TiledMapTileLayer) wallDataLayer);
             // Wand-Tileset hat Wand/Transparent-Viertel vertauscht gezeichnet (gefunden
-            // 2026-07-20) - Gitter komplett umkehren ergibt exakt dieselbe Wirkung wie "jede
-            // Kachel zeigt die Gegenkombination", ohne dass die Kunst neu gezeichnet werden muss
-            invertGrid(wallGrid);
-            this.wallRenderer = new DualGridRenderer(wallGrid, "walls_dualgrid.png", "walls_dualgrid.json");
+            // 2026-07-20) - früher wurde dafür das GITTER selbst umgekehrt, das machte aber
+            // "true" in wallGrid semantisch falsch für alles außer dem Rendering (siehe
+            // Sidequest-1-Bug: isBlocked() nutzte dieselben, verfälschten Daten für Kollision
+            // und hielt dadurch den ganzen Rauminnenbereich für "blockiert"). Jetzt bleibt
+            // wallGrid unverändert (true = echte Wand), die Kompensation passiert stattdessen
+            // NUR in der Kachel-Bild-Auswahl (siehe DualGridRenderer.invertMaskLookup).
+            this.wallRenderer = new DualGridRenderer(wallGrid, "walls_dualgrid.png", "walls_dualgrid.json", true);
         }
 
         // libGDX' TmxMapLoader flippt Objekt-Y-Koordinaten beim Laden bereits selbst (anders als
@@ -104,6 +107,17 @@ public class Room {
         return pixelHeight;
     }
 
+    // Kollisionsabfrage für Player/Enemy (siehe Sidequest 1) - true, wenn an dieser Welt-Position
+    // entweder eine Wand ODER eine Terrain-Lücke (Wasser/Loch) liegt. Nutzt dieselben Gitter wie
+    // das Dual-Grid-Rendering (siehe DualGridRenderer.isSpecialAtWorld()), keine eigene
+    // Kollisions-Datenkopie. Räume ohne die jeweilige Layer (Renderer == null) blockieren dort
+    // gar nichts, statt versehentlich alles als frei ODER alles als blockiert zu behandeln.
+    public boolean isBlocked(float worldX, float worldY) {
+        boolean wall = wallRenderer != null && wallRenderer.isSpecialAtWorld(worldX, worldY);
+        boolean gap = terrainRenderer != null && terrainRenderer.isSpecialAtWorld(worldX, worldY);
+        return wall || gap;
+    }
+
     // Läuft jeden Frame (siehe Main.render()), unabhängig davon ob Game Over ist - treibt die
     // Dual-Grid-Animationen an (z.B. Wasser-Ripple), rein kosmetisch, kein Gameplay-Bezug
     public void update(float deltaTime) {
@@ -132,14 +146,6 @@ public class Room {
         }
 
         return grid;
-    }
-
-    private void invertGrid(boolean[][] grid) {
-        for (int x = 0; x < grid.length; x++) {
-            for (int y = 0; y < grid[x].length; y++) {
-                grid[x][y] = !grid[x][y];
-            }
-        }
     }
 
     public void render(OrthographicCamera camera) {

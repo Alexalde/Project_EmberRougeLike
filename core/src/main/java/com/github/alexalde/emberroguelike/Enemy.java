@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 import java.util.EnumMap;
@@ -23,6 +24,11 @@ public class Enemy {
     // Alle Animations-Frames haben dieselbe feste Pixelgröße, siehe Player.SPRITE_WIDTH/HEIGHT
     private static final int SPRITE_WIDTH = 32;
     private static final int SPRITE_HEIGHT = 32;
+
+    // Terrain-Kollisionsbox (Sidequest 1), gleiches Prinzip wie Player.hitboxBounds - aus dem
+    // "Hitbox"-Tag im Spritesheet abgeleitet, Fallback auf die volle Sprite-Fläche solange
+    // dieser Tag noch nicht gezeichnet ist (siehe Konstruktor)
+    private Rectangle hitboxBounds;
 
     // Eigene Texturen (Platzhalter, laufzeit-generiert) - werden in dispose() aufgeräumt.
     // Bleibt null, sobald/sofern ALLE 5 Zustands-Tags in enemy_spritesheet.json existieren -
@@ -107,6 +113,7 @@ public class Enemy {
         // sonst beim Textur-Laden crashen. Solange die Dateien fehlen, bleiben alle Zustände auf
         // den obigen Platzhaltern; sobald sie da sind, übernimmt putRealAnimationIfExists() pro
         // Tag einzeln (kein Alles-oder-nichts, genau wie beim Spieler)
+        Rectangle realHitboxBounds = null;
         if (Gdx.files.internal("enemy_spritesheet.png").exists() && Gdx.files.internal("enemy_spritesheet.json").exists()) {
             this.enemySpriteSheet = new AsepriteSpriteSheet("enemy_spritesheet.png", "enemy_spritesheet.json");
             putRealAnimationIfExists(AnimationState.IDLE, "Idle");
@@ -114,7 +121,9 @@ public class Enemy {
             putRealAnimationIfExists(AnimationState.ATTACK, "Attack");
             putRealAnimationIfExists(AnimationState.HURT, "Hurt");
             putRealAnimationIfExists(AnimationState.DEATH, "Death");
+            realHitboxBounds = enemySpriteSheet.getHitboxBounds();
         }
+        this.hitboxBounds = realHitboxBounds != null ? realHitboxBounds : new Rectangle(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
 
         this.currentAnimationState = AnimationState.IDLE;
         this.animationTime = 0f;
@@ -129,7 +138,7 @@ public class Enemy {
         this.attackDamage = 10f;
     }
 
-    public void update(float deltaTime, Player player) {
+    public void update(float deltaTime, Player player, Room room) {
         // Läuft IMMER, auch nach dem Tod - sonst würde die Death-Animation nie über Frame 0
         // hinauskommen (analog zu Player.updateAnimation(), siehe dortiger Kommentar). Erst
         // DANACH darf die KI/Bewegungslogik unten früh aussteigen.
@@ -165,10 +174,8 @@ public class Enemy {
                 direction.nor();
             }
 
-            // Bewegung auf die Position anrechnen
-            // position = position + direction * speed * deltaTime
-            position.x += direction.x * moveSpeed * deltaTime;
-            position.y += direction.y * moveSpeed * deltaTime;
+            // Bewegung auf die Position anrechnen (mit Terrain-Kollision, siehe moveWithCollision())
+            moveWithCollision(direction.x * moveSpeed * deltaTime, direction.y * moveSpeed * deltaTime, room);
 
         } else {
             if (attackCooldownRemaining > 0) {
@@ -182,6 +189,32 @@ public class Enemy {
                 player.takeDamage(attackDamage);
             }
         }
+    }
+
+    // Gleiche Technik wie Player.moveWithCollision() (Sidequest 1) - X und Y einzeln probeweise
+    // anwenden, nur übernehmen wenn frei, damit der Gegner an Wänden entlang rutscht statt
+    // stehenzubleiben oder durchzulaufen.
+    private void moveWithCollision(float deltaX, float deltaY, Room room) {
+        float newX = position.x + deltaX;
+        if (!collidesWithRoom(newX, position.y, room)) {
+            position.x = newX;
+        }
+
+        float newY = position.y + deltaY;
+        if (!collidesWithRoom(position.x, newY, room)) {
+            position.y = newY;
+        }
+    }
+
+    // TODO (Sidequest 1.3, Lückentext): genau wie Player.collidesWithRoom() - prüfe alle 4 Ecken
+    // der KOLLISIONSBOX (hitboxBounds, nicht die volle Sprite-Fläche!) bei Sprite-Position (x, y)
+    // gegen room.isBlocked(). Box liegt bei (x + hitboxBounds.x, y + hitboxBounds.y) mit Breite
+    // hitboxBounds.width und Höhe hitboxBounds.height. True, wenn irgendeine Ecke blockiert ist.
+    private boolean collidesWithRoom(float x, float y, Room room) {
+        return room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y)
+            || room.isBlocked(x + hitboxBounds.x + hitboxBounds.width - 1, y + hitboxBounds.y)
+            || room.isBlocked(x + hitboxBounds.x + hitboxBounds.width - 1, y + hitboxBounds.y + hitboxBounds.height - 1)
+            || room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y + hitboxBounds.height - 1);
     }
 
     public void takeDamage(int amount){
@@ -317,6 +350,15 @@ public class Enemy {
         Vector2 center = getCenter();
         shapeRenderer.setColor(Color.GREEN);
         shapeRenderer.circle(center.x, center.y, HURTBOX_RADIUS);
+    }
+
+    // Zeigt die tatsächlich für Terrain-Kollision genutzte Box (Sidequest 1), gleiches Prinzip
+    // wie Player.drawTerrainCollisionDebug() - GELB, zur Unterscheidung von der GRÜNEN Hurtbox oben
+    public void drawTerrainCollisionDebug(ShapeRenderer shapeRenderer) {
+        shapeRenderer.setColor(Color.YELLOW);
+        float drawX = MathUtils.round(position.x);
+        float drawY = MathUtils.round(position.y);
+        shapeRenderer.rect(drawX + hitboxBounds.x, drawY + hitboxBounds.y, hitboxBounds.width, hitboxBounds.height);
     }
 
     public void dispose() {

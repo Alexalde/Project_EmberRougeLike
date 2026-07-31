@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2; // Neu importiert!
 
 import java.util.EnumMap;
@@ -24,6 +25,12 @@ public class Player {
     // Kachelgröße sind vollständig entkoppelt (kein Codepfad verknüpft beide).
     private static final int SPRITE_WIDTH = 48;
     private static final int SPRITE_HEIGHT = 48;
+
+    // Terrain-Kollisionsbox (Sidequest 1), relativ zur Zeichenposition (position.x/y = untere
+    // linke Ecke des Sprites) - aus dem "Hitbox"-Tag im Spritesheet abgeleitet (siehe
+    // AsepriteSpriteSheet.getHitboxBounds()). Solange dieser Tag noch nicht gezeichnet ist,
+    // Fallback auf die volle Sprite-Fläche (siehe Konstruktor).
+    private Rectangle hitboxBounds;
 
     // Echte, von Aseprite exportierte Kunst (siehe Quest 7.10) - Tags, die darin noch nicht
     // existieren, liefern null. Für solche Zustände wird stattdessen die bereits fertige
@@ -87,6 +94,10 @@ public class Player {
         this.speed = 300f;
 
         this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
+
+        Rectangle realHitboxBounds = playerSpriteSheet.getHitboxBounds();
+        this.hitboxBounds = realHitboxBounds != null ? realHitboxBounds : new Rectangle(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
+
         // Idle-South existiert bereits als echte Kunst (siehe Quest 7.10) - dient als
         // Ersatz-Optik (Form + echte Bewegung) für jeden Zustand, der noch keine eigene echte
         // Kunst hat, statt eines einfarbigen Rechtecks
@@ -120,16 +131,15 @@ public class Player {
     }
 
     // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject).
-    // "roomWidth"/"roomHeight" sind die PIXEL-Maße des AKTUELLEN Raums (nicht der festen Viewport-
-    // Größe) - Räume können größer als der Bildschirm sein, siehe updateCamera() in Main
-    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition, float roomWidth, float roomHeight) {
+    // "room" liefert sowohl die Raum-Maße als auch die Terrain-Kollisionsabfrage (siehe
+    // Sidequest 1) - ersetzt die vorherigen einzelnen roomWidth/roomHeight-Parameter
+    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition, Room room) {
         sword.update(deltaTime, targets);
         bow.update(deltaTime, targets);
 
         if (state == PlayerState.DASHING) {
             // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
-            position.x += dashDirection.x * DASH_SPEED * deltaTime;
-            position.y += dashDirection.y * DASH_SPEED * deltaTime;
+            moveWithCollision(dashDirection.x * DASH_SPEED * deltaTime, dashDirection.y * DASH_SPEED * deltaTime, room);
 
             dashTimeRemaining -= deltaTime;
             if (dashTimeRemaining <= 0) {
@@ -160,10 +170,8 @@ public class Player {
                 direction.nor();
             }
 
-            // Bewegung auf die Position anrechnen
-            // position = position + direction * speed * deltaTime
-            position.x += direction.x * speed * deltaTime;
-            position.y += direction.y * speed * deltaTime;
+            // Bewegung auf die Position anrechnen (mit Terrain-Kollision, siehe moveWithCollision())
+            moveWithCollision(direction.x * speed * deltaTime, direction.y * speed * deltaTime, room);
 
             // Cooldown läuft nur ab, während wir NICHT dashen
             if (dashCooldownRemaining > 0) {
@@ -185,15 +193,15 @@ public class Player {
         // Grenzen für X (0 bis Raumbreite minus Bildbreite)
         if (position.x < 0) {
             position.x = 0;
-        } else if (position.x > roomWidth - SPRITE_WIDTH) {
-            position.x = roomWidth - SPRITE_WIDTH;
+        } else if (position.x > room.getPixelWidth() - SPRITE_WIDTH) {
+            position.x = room.getPixelWidth() - SPRITE_WIDTH;
         }
 
         // Grenzen für Y (0 bis Raumhöhe minus Bildhöhe)
         if (position.y < 0) {
             position.y = 0;
-        } else if (position.y > roomHeight - SPRITE_HEIGHT) {
-            position.y = roomHeight - SPRITE_HEIGHT;
+        } else if (position.y > room.getPixelHeight() - SPRITE_HEIGHT) {
+            position.y = room.getPixelHeight() - SPRITE_HEIGHT;
         }
 
         Vector2 center = getCenter();
@@ -217,6 +225,36 @@ public class Player {
                 aimDirection = targetDirection;
             }
         }
+    }
+
+    // Achsen-getrennte Sliding-Kollision (Sidequest 1): X und Y werden EINZELN probeweise
+    // angewendet und nur übernommen, wenn die neue Position frei ist - so rutscht der Spieler
+    // an einer Wand entlang, statt bei diagonaler Bewegung komplett stehenzubleiben, sobald nur
+    // eine der beiden Achsen blockiert ist. Wird sowohl für normale Bewegung als auch fürs
+    // Dashen verwendet (siehe update()) - Dashen soll genauso wenig durch Wände gehen können.
+    private void moveWithCollision(float deltaX, float deltaY, Room room) {
+        float newX = position.x + deltaX;
+        if (!collidesWithRoom(newX, position.y, room)) {
+            position.x = newX;
+        }
+
+        float newY = position.y + deltaY;
+        if (!collidesWithRoom(position.x, newY, room)) {
+            position.y = newY;
+        }
+    }
+
+    // TODO (Sidequest 1.2, Lückentext): Prüfe alle 4 Ecken der KOLLISIONSBOX (nicht der ganzen
+    // Sprite-Fläche!) bei Sprite-Position (x, y) gegen room.isBlocked(). Die Box liegt bei
+    // (x + hitboxBounds.x, y + hitboxBounds.y) mit Breite hitboxBounds.width und Höhe
+    // hitboxBounds.height - reicht also von diesem Punkt bis
+    // (boxX + hitboxBounds.width - 1, boxY + hitboxBounds.height - 1). Gib true zurück, wenn
+    // IRGENDEINE der 4 Ecken auf einer Wand oder Terrain-Lücke liegt, sonst false.
+    private boolean collidesWithRoom(float x, float y, Room room) {
+        return room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y)
+            || room.isBlocked(x + hitboxBounds.x + hitboxBounds.width - 1, y + hitboxBounds.y)
+            || room.isBlocked(x + hitboxBounds.x + hitboxBounds.width - 1, y + hitboxBounds.y + hitboxBounds.height - 1)
+            || room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y + hitboxBounds.height - 1);
     }
 
     // Wird vom Schadenssystem abgefragt, bevor Schaden angewendet wird
@@ -420,6 +458,16 @@ public class Player {
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
         sword.drawHitboxDebug(shapeRenderer, getCenter());
         bow.drawHitboxDebug(shapeRenderer);
+    }
+
+    // Zeigt die tatsächlich für Terrain-Kollision genutzte Box (Sidequest 1) - als Kontur, damit
+    // man beim Zeichnen des "Hitbox"-Tags direkt sieht, ob die abgeleitete Box wie erwartet
+    // aussieht. Eigene Farbe (GELB) zur Unterscheidung von Enemy.HURTBOX_RADIUS (GRÜN).
+    public void drawTerrainCollisionDebug(ShapeRenderer shapeRenderer) {
+        shapeRenderer.setColor(Color.YELLOW);
+        float drawX = MathUtils.round(position.x);
+        float drawY = MathUtils.round(position.y);
+        shapeRenderer.rect(drawX + hitboxBounds.x, drawY + hitboxBounds.y, hitboxBounds.width, hitboxBounds.height);
     }
 
     public void dispose() {

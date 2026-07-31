@@ -1,8 +1,10 @@
 package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 
@@ -21,9 +23,15 @@ public class AsepriteSpriteSheet {
     // Alle Frames in Original-Reihenfolge, unabhängig von Tags - siehe getAllFramesAnimation()
     private final TextureRegion[] allFrames;
     private final float[] allDurationsSeconds;
+    // null, wenn kein "Hitbox"-Tag existiert - siehe computeHitboxBounds()/getHitboxBounds()
+    private final Rectangle hitboxBounds;
 
     public AsepriteSpriteSheet(String pngPath, String jsonPath) {
-        this.texture = new Texture(pngPath);
+        // Pixmap statt direkt Texture laden - wird unten für computeHitboxBounds() gebraucht
+        // (Texture erlaubt nach dem Hochladen keinen CPU-seitigen Pixelzugriff mehr). Die Texture
+        // selbst entsteht aus demselben Pixmap, damit die Datei nicht doppelt gelesen wird.
+        Pixmap pixmap = new Pixmap(Gdx.files.internal(pngPath));
+        this.texture = new Texture(pixmap);
 
         JsonValue root = new JsonReader().parse(Gdx.files.internal(jsonPath));
         JsonValue framesJson = root.get("frames");
@@ -58,12 +66,70 @@ public class AsepriteSpriteSheet {
 
             animationsByTag.put(name, new Animation(tagFrames, tagDurations));
         }
+
+        this.hitboxBounds = computeHitboxBounds(pixmap);
+        pixmap.dispose();
+    }
+
+    // Terrain-Kollisionsbox aus einem eigenen "Hitbox"-Tag ableiten (Sidequest 1): der/die
+    // Zeichner/in malt dafür einfarbig-opak (beliebige Farbe, nur Alpha zählt) genau die Fläche
+    // ein, die als Kollisionsbox gelten soll - der ERSTE Frame dieses Tags wird nach dem
+    // sichtbaren (nicht-transparenten) Bereich abgesucht (gleiche Alpha-Kanal-Technik wie
+    // Healthbar.findContentLeftEdge()/findContentRightEdge(), hier auf alle 4 Kanten erweitert).
+    // Liefert null, wenn kein "Hitbox"-Tag existiert (oder er komplett transparent ist) - der
+    // Aufrufer soll dann auf die volle Sprite-Fläche zurückfallen.
+    private Rectangle computeHitboxBounds(Pixmap pixmap) {
+        Animation hitboxAnimation = animationsByTag.get("Hitbox");
+        if (hitboxAnimation == null) {
+            return null;
+        }
+
+        TextureRegion hitboxFrame = hitboxAnimation.getFrame(0f);
+        int frameX = hitboxFrame.getRegionX();
+        int frameY = hitboxFrame.getRegionY();
+        int frameWidth = hitboxFrame.getRegionWidth();
+        int frameHeight = hitboxFrame.getRegionHeight();
+
+        int minX = frameWidth;
+        int maxX = -1;
+        int minY = frameHeight;
+        int maxY = -1;
+        for (int px = 0; px < frameWidth; px++) {
+            for (int py = 0; py < frameHeight; py++) {
+                int alpha = pixmap.getPixel(frameX + px, frameY + py) & 0xFF;
+                if (alpha != 0) {
+                    minX = Math.min(minX, px);
+                    maxX = Math.max(maxX, px);
+                    minY = Math.min(minY, py);
+                    maxY = Math.max(maxY, py);
+                }
+            }
+        }
+
+        if (maxX < 0) {
+            return null;
+        }
+
+        // Bild-Koordinaten wachsen nach UNTEN (Zeile 0 = oben), Welt-Koordinaten nach OBEN -
+        // der Abstand vom BILD-Boden (frameHeight - 1 - maxY) wird zum Y-Offset relativ zur
+        // Zeichenposition (die immer die UNTERE linke Ecke des Sprites ist)
+        float offsetX = minX;
+        float offsetY = frameHeight - 1 - maxY;
+        float width = maxX - minX + 1;
+        float height = maxY - minY + 1;
+        return new Rectangle(offsetX, offsetY, width, height);
     }
 
     // null, wenn dieser Tag (noch) nicht existiert - Aufrufer soll dann auf einen
     // Pixmap-Platzhalter zurückfallen
     public Animation getAnimation(String tagName) {
         return animationsByTag.get(tagName);
+    }
+
+    // null, wenn kein "Hitbox"-Tag existiert - Aufrufer soll dann auf die volle Sprite-Fläche
+    // zurückfallen (siehe computeHitboxBounds())
+    public Rectangle getHitboxBounds() {
+        return hitboxBounds;
     }
 
     // Alle Frames der Datei in Original-Reihenfolge, unabhängig von Tags - für Sprite-Sheets,
