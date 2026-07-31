@@ -8,4 +8,5 @@ public class DebugSettings {
     public static boolean logDamage = true;
     public static boolean logAnimationState = true;
     public static boolean renderTerrainDebug = true;
+    public static boolean renderStats = true;
 }

@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
@@ -27,6 +28,9 @@ public class Main extends ApplicationAdapter {
     // an derselben Bildschirmposition bleiben
     private OrthographicCamera uiCamera;
     private Healthbar healthbar;
+    // Reine Debug-Anzeige (Sidequest 1.4, DebugSettings.renderStats) - eingebaute Standard-
+    // Schrift (kein eigenes Font-Asset nötig), spätere eigene Pixel-Font siehe ROADMAP-Backlog
+    private BitmapFont debugFont;
 
     // Der tatsächliche, ganzzahlig skalierte und zentrierte Bildausschnitt auf dem echten Fenster
     private int viewportX, viewportY, viewportWidth, viewportHeight;
@@ -54,6 +58,7 @@ public class Main extends ApplicationAdapter {
         uiCamera.setToOrtho(false, GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
         uiCamera.update();
         healthbar = new Healthbar();
+        debugFont = new BitmapFont();
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -260,6 +265,18 @@ public class Main extends ApplicationAdapter {
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
         healthbar.draw(batch, player);
+
+        // Debug: einfache Text-Anzeige der wichtigsten Spieler-Stats, umschaltbar über
+        // DebugSettings.renderStats - bewusst nur Debug-Text mit der eingebauten
+        // Standard-Schrift, kein gestaltetes UI-Element (siehe ROADMAP Sidequest 1.4)
+        if (DebugSettings.renderStats) {
+            String statsText = String.format(
+                "HP: %.0f/%.0f\nSpeed: %.0f\nDash-CD: %.2f",
+                player.getHealth(), player.getMaxHealth(), player.getSpeed(), Math.max(0f, player.getDashCooldownRemaining())
+            );
+            debugFont.draw(batch, statsText, 8f, 60f);
+        }
+
         batch.end();
 
         // Debug: exakte Hitbox-Form, umschaltbar über DebugSettings.renderHitboxes
@@ -306,5 +323,6 @@ public class Main extends ApplicationAdapter {
         }
         mouseDebugTexture.dispose();
         healthbar.dispose();
+        debugFont.dispose();
     }
 }

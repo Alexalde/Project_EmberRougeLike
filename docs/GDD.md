@@ -23,7 +23,35 @@ Status: In Erarbeitung, wird Schritt für Schritt gemeinsam ausgebaut.
 - **Waffenslots:** Der Spieler trägt **eine aktive Waffe** zur Zeit (MVP-Vereinfachung). Mehrere Waffenslots mit Echtzeit-Wechsel sind eine mögliche spätere Erweiterung, aber nicht Teil des MVP.
 - **Movesets statt reiner Stats:** Jede Waffe hat ein **eigenes Angriffsmuster/Moveset** (z.B. Schwert = schnelle Nahkampf-Combo, Bogen = gezielter Fernkampf-Schuss), nicht nur unterschiedliche Zahlenwerte auf derselben Animation. Das ist bewusst mehr Aufwand, aber Kernbestandteil des Ember-Knights-Gefühls — und guter Lernstoff für polymorphes Verhalten (z.B. ein gemeinsames Interface/abstrakte Klasse für "Waffe", die von jedem konkreten Waffentyp unterschiedlich implementiert wird).
 - **Nah- und Fernkampf von Anfang an:** Das MVP deckt beide Kategorien ab (z.B. mindestens eine Nahkampf- und eine Fernkampfwaffe), nicht nur eine Kategorie zuerst.
-- Offene Punkte für später: konkrete Waffenliste, Angriffs-Timing/Cooldowns pro Waffe, ob/wie Fähigkeiten (Skills) von Waffen getrennt werden, Treffererkennung (Hitbox-Ansatz).
+- Offene Punkte für später: konkrete Waffenliste, ob/wie Fähigkeiten (Skills) von Waffen getrennt werden.
+
+### 2.1 Stat-System (Waffen-Basiswert × Spieler-weite Stats)
+
+**Entschieden 2026-07-21** (löst den bisher offenen Punkt "Waffen-Werte/Angriffs-Timing" oben ab): Jede Waffe liefert einen **Basiswert** pro Angriff (`baseDamage`, `baseAttackSpeed`), der Spieler hält **globale Stats**, die diesen Basiswert modifizieren - statt wie bisher (`Sword`/`Bow`) einen fest codierten Einzelwert pro Waffe.
+
+**Formel-Grundgerüst:**
+```
+finalDamage = weapon.baseDamage * player.damageMultiplier
+if (critRoll < player.critChance) {
+    finalDamage *= player.critDamageMultiplier
+}
+```
+
+**Spieler-weite Stats** (komplettes Set gleich mit angelegt, auch wenn manche vorerst ungenutzte Platzhalter bleiben - vermeidet, dass Quest 8 sofort wieder neue Felder nachziehen muss):
+
+| Stat | Bedeutung |
+|---|---|
+| `damageMultiplier` | Multipliziert jeden Waffen-Basisschaden |
+| `attackSpeedMultiplier` | Skaliert Angriffs-Cooldowns/-Timing (analog zu `attackVisualDuration`/`attackCooldownDuration`) |
+| `critChance` | Wahrscheinlichkeit (0-1) für einen kritischen Treffer |
+| `critDamageMultiplier` | Zusätzlicher Multiplikator bei einem Crit |
+| `projectileCount` | Zusätzliche Projektile pro Schuss (z.B. Bogen) |
+| `cooldownReduction` | Wirkt auf Dash-Cooldown, später Waffen-/Fähigkeiten-Cooldowns |
+| `moveSpeed`, `lifeSteal`, `range` | Vorerst ungenutzte Platzhalter-Felder, für spätere Items/Level-Ups vorgesehen |
+
+**Schadenstypen von Anfang an typisiert** (nicht nur ein generischer "Damage"-Wert): eigenes `DamageType`-Enum (z.B. `PHYSICAL`, `FIRE`, `POISON` - Liste wächst nach Bedarf, kein abschließender Satz jetzt nötig). Jede Waffe hat einen `DamageType` (z.B. Schwert = `PHYSICAL`). Ermöglicht später typ-abhängige Debuffs/Buffs (z.B. "+50% Schaden gegen brennende Gegner") nativ, ohne späteren Umbau der Grundstruktur.
+
+**Erweiterbarkeit für typ-/bedingungsabhängige Modifikatoren:** Statt fester Felder/Maps für jede denkbare Bedingung eine Liste **polymorpher Modifier-Objekte** auf dem Spieler (z.B. ein `DamageModifier`-Interface, das prüft ob es auf einen konkreten Treffer "zutrifft" und den Schaden entsprechend anpasst) - neue Debuff-/Buff-Typen kommen als neue Klasse dazu, ohne bestehenden Code anzufassen (Open-Closed-Prinzip). Bewusst als fortgeschritteneres OOP-Konzept markiert (Nutzer-Entscheidung 2026-07-21, "am einfachsten später skalierbar" hatte Vorrang vor "einfach jetzt umzusetzen"): wird zunächst direkt implementiert, der Lerninhalt dahinter aber bewusst Stück für Stück in späteren Sessions nachgeholt (als eigener Task vermerkt, gleiches Vorgehen wie bei `Animation.getFrameByElapsedTime()`).
 
 ## 3. Progression
 

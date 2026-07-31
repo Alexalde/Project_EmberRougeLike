@@ -295,6 +295,15 @@ public class Player {
         return maxHealth;
     }
 
+    // Für die Debug-Stat-Anzeige (Sidequest 1.4)
+    public float getSpeed() {
+        return speed;
+    }
+
+    public float getDashCooldownRemaining() {
+        return dashCooldownRemaining;
+    }
+
     public Vector2 getCenter() {
         return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
     }
