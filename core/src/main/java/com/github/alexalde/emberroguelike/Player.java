@@ -92,11 +92,19 @@ public class Player {
     // getStats(), statt direkt auf Player-interne Felder zuzugreifen
     private PlayerStats stats;
 
+    // XP/Level (siehe GDD 3.1/Quest 8.4) - xpToNextLevel wächst pro Level (siehe addXp())
+    private int level;
+    private float currentXp;
+    private float xpToNextLevel;
+
     public Player(float startX, float startY) {
         this.position = new Vector2(startX, startY);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
         this.stats = new PlayerStats();
+        this.level = 1;
+        this.currentXp = 0f;
+        this.xpToNextLevel = 100f;
 
         this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
 
@@ -313,6 +321,39 @@ public class Player {
     // Zahlen-Charakterbogen (siehe GDD 2.1/Quest 8) - Items/Level-Ups greifen hierüber zu
     public PlayerStats getStats() {
         return stats;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public float getCurrentXp() {
+        return currentXp;
+    }
+
+    public float getXpToNextLevel() {
+        return xpToNextLevel;
+    }
+
+    // Sammelt XP, gibt zurück wie viele Level-Ups dabei ausgelöst wurden (meist 0 oder 1 - eine
+    // While-Schleife statt if, falls ein einzelner großer XP-Sprung mehrere Schwellen auf einmal
+    // überschreitet). xpToNextLevel wächst pro Level, damit spätere Level länger dauern.
+    public int addXp(float amount) {
+        currentXp += amount;
+        int levelUps = 0;
+
+        while (currentXp >= xpToNextLevel) {
+            currentXp -= xpToNextLevel;
+            level++;
+            xpToNextLevel *= 1.5f;
+            levelUps++;
+
+            if (DebugSettings.logLevelUp) {
+                System.out.println("Level Up! Neues Level: " + level + ", nächste XP-Schwelle: " + xpToNextLevel);
+            }
+        }
+
+        return levelUps;
     }
 
     public Vector2 getCenter() {

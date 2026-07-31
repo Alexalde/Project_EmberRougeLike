@@ -70,6 +70,9 @@ public class Enemy {
     private float attackCooldownRemaining;
     private float attackDamage;
 
+    // XP-Belohnung beim Tod (siehe GDD 3.1/Quest 8.4)
+    private float xpValue;
+
     public Enemy(float startX, float startY){
         this.position = new Vector2(startX, startY);
         this.health = 20;
@@ -136,6 +139,7 @@ public class Enemy {
         this.attackCooldownDuration = 1f;
         this.attackCooldownRemaining = 0f;
         this.attackDamage = 10f;
+        this.xpValue = 25f;
     }
 
     public void update(float deltaTime, Player player, Room room) {
@@ -240,6 +244,10 @@ public class Enemy {
     // statt ihn im selben Frame zu entfernen, in dem er stirbt (siehe Main.render())
     public boolean isRemovable() {
         return !isAlive() && deathTimeRemaining <= 0;
+    }
+
+    public float getXpValue() {
+        return xpValue;
     }
 
     private Vector2 getCenter() {
