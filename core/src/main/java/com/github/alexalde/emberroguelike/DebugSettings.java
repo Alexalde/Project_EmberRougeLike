@@ -7,6 +7,7 @@ public class DebugSettings {
     // nur die Konsolen-Ausgaben einschalten, die man gerade braucht, statt alles auf einmal
     public static boolean logDamage = true;
     public static boolean logAnimationState = true;
+    public static boolean logLevelUp = true;
     public static boolean renderTerrainDebug = true;
     public static boolean renderStats = true;
 }
