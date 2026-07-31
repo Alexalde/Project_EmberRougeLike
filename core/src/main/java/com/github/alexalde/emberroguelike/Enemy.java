@@ -210,10 +210,8 @@ public class Enemy {
         }
     }
 
-    // TODO (Sidequest 1.3, Lückentext): genau wie Player.collidesWithRoom() - prüfe alle 4 Ecken
-    // der KOLLISIONSBOX (hitboxBounds, nicht die volle Sprite-Fläche!) bei Sprite-Position (x, y)
-    // gegen room.isBlocked(). Box liegt bei (x + hitboxBounds.x, y + hitboxBounds.y) mit Breite
-    // hitboxBounds.width und Höhe hitboxBounds.height. True, wenn irgendeine Ecke blockiert ist.
+    // Gleiches Prinzip wie Player.collidesWithRoom() - prüft alle 4 Ecken der Kollisionsbox
+    // (hitboxBounds, nicht die volle Sprite-Fläche) gegen room.isBlocked().
     private boolean collidesWithRoom(float x, float y, Room room) {
         return room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y)
             || room.isBlocked(x + hitboxBounds.x + hitboxBounds.width - 1, y + hitboxBounds.y)

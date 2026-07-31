@@ -258,12 +258,8 @@ public class Player {
         }
     }
 
-    // TODO (Sidequest 1.2, Lückentext): Prüfe alle 4 Ecken der KOLLISIONSBOX (nicht der ganzen
-    // Sprite-Fläche!) bei Sprite-Position (x, y) gegen room.isBlocked(). Die Box liegt bei
-    // (x + hitboxBounds.x, y + hitboxBounds.y) mit Breite hitboxBounds.width und Höhe
-    // hitboxBounds.height - reicht also von diesem Punkt bis
-    // (boxX + hitboxBounds.width - 1, boxY + hitboxBounds.height - 1). Gib true zurück, wenn
-    // IRGENDEINE der 4 Ecken auf einer Wand oder Terrain-Lücke liegt, sonst false.
+    // Prüft alle 4 Ecken der Kollisionsbox (hitboxBounds, nicht die volle Sprite-Fläche) bei
+    // Sprite-Position (x, y) gegen room.isBlocked() - true, wenn irgendeine Ecke blockiert ist.
     private boolean collidesWithRoom(float x, float y, Room room) {
         return room.isBlocked(x + hitboxBounds.x, y + hitboxBounds.y)
             || room.isBlocked(x + hitboxBounds.x + hitboxBounds.width - 1, y + hitboxBounds.y)
@@ -454,9 +450,9 @@ public class Player {
         return 0f;
     }
 
-    // TODO: Bei facingUp UND currentAnimationState IDLE bzw. WALK die jeweilige "*Up"-Variante
-    // zurückgeben (idleUpAnimation/walkUpAnimation) statt des Eintrags aus "animations" - ATTACK/
-    // HURT/DEATH haben keine Norden-Variante, dafür also immer animations.get(currentAnimationState).
+    // Bei facingUp UND IDLE/WALK die jeweilige "*Up"-Variante zurückgeben statt des Eintrags aus
+    // "animations" - ATTACK/HURT/DEATH haben keine Norden-Variante, dafür immer
+    // animations.get(currentAnimationState).
     private Animation getCurrentAnimation() {
         if (facingUp && currentAnimationState == AnimationState.IDLE){
             return idleUpAnimation;

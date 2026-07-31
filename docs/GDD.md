@@ -27,7 +27,7 @@ Status: In Erarbeitung, wird Schritt für Schritt gemeinsam ausgebaut.
 
 ### 2.1 Stat-System (Waffen-Basiswert × Spieler-weite Stats)
 
-**Entschieden 2026-07-21** (löst den bisher offenen Punkt "Waffen-Werte/Angriffs-Timing" oben ab): Jede Waffe liefert einen **Basiswert** pro Angriff (`baseDamage`, `baseAttackSpeed`), der Spieler hält **globale Stats**, die diesen Basiswert modifizieren - statt wie bisher (`Sword`/`Bow`) einen fest codierten Einzelwert pro Waffe.
+**Entschieden UND umgesetzt 2026-07-21** (Quest 8, löst den bisher offenen Punkt "Waffen-Werte/Angriffs-Timing" oben ab): Jede Waffe liefert einen **Basiswert** pro Angriff (`baseDamage`, `baseAttackSpeed`), der Spieler hält **globale Stats**, die diesen Basiswert modifizieren - statt wie bisher (`Sword`/`Bow`) einen fest codierten Einzelwert pro Waffe.
 
 **Formel-Grundgerüst:**
 ```
@@ -60,6 +60,7 @@ if (critRoll < player.critChance) {
 - **Raum-Belohnungen:** Bestimmte Räume (z.B. Schatzräume, Nach-Kampf-Räume) geben Belohnungen, ggf. mit Auswahl zwischen mehreren Optionen.
 - **Level-Ups:** Sammeln von Erfahrung/In-Run-Ressourcen schaltet während des Runs Stat-Boosts oder Fähigkeiten frei.
 - Einfache Drops (z.B. Heiltränke) sind ergänzend denkbar, aber kein separat priorisiertes System.
+- **Umgesetzt (Quest 8, 2026-07-21):** Jeder Raum-Clear (nicht nur dedizierte Schatzräume) UND jeder Level-Up lösen dieselbe Auswahl aus 3 zufälligen `Item`s aus (`RewardChoiceUI`, siehe ROADMAP Quest 8) - "Schatzräume" als eigener, gezielt markierter Raumtyp ist eine mögliche spätere Verfeinerung, kein aktueller Bestandteil.
 
 ### 3.2 Meta-Progression (zwischen Runs)
 
