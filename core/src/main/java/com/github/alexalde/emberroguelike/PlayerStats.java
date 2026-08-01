@@ -33,6 +33,13 @@ public class PlayerStats {
     public float moveSpeed = 0f;
     public float lifeSteal = 0f;
     public float range = 0f;
+    // Multiplikator auf die Projektil-Fluggeschwindigkeit (z.B. Bogen) - 1 = unverändert
+    public float projectileSpeedMultiplier = 1f;
+    // Multiplikator auf JEDE eingesammelte XP-Menge (siehe XpPickup) - 1 = unverändert
+    public float xpMultiplier = 1f;
+    // Zusätzliche Abprall-/Ricochet-Ladungen für Projektile, die diese Eigenschaft haben (über
+    // Items ODER spezifische Waffen, siehe ROADMAP-Backlog) - 0 = kein Abprall
+    public int bounceCount = 0;
 
     // Erweiterungspunkt für typ-/bedingungsabhängige Effekte (siehe DamageModifier) - bleibt
     // vorerst leer, kein Item braucht das aktuell

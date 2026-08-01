@@ -48,6 +48,9 @@ if (critRoll < player.critChance) {
 | `projectileCount` | Zusätzliche Projektile pro Schuss (z.B. Bogen) |
 | `cooldownReduction` | Wirkt auf Dash-Cooldown, später Waffen-/Fähigkeiten-Cooldowns |
 | `moveSpeed`, `lifeSteal`, `range` | Vorerst ungenutzte Platzhalter-Felder, für spätere Items/Level-Ups vorgesehen |
+| `projectileSpeedMultiplier` | Multiplikator auf die Projektil-Fluggeschwindigkeit (z.B. Bogen) - noch ungenutzt |
+| `xpMultiplier` | Multiplikator auf jede eingesammelte XP-Menge (siehe `XpPickup`) - noch ungenutzt |
+| `bounceCount` | Zusätzliche Abprall-/Ricochet-Ladungen für Projektile mit dieser Eigenschaft (über Items ODER spezifische Waffen) - noch ungenutzt, braucht eigenes Bounce-Verhalten in `Projectile` (Zielwahl beim Abprall etc.) |
 
 **Schadenstypen von Anfang an typisiert** (nicht nur ein generischer "Damage"-Wert): eigenes `DamageType`-Enum (z.B. `PHYSICAL`, `FIRE`, `POISON` - Liste wächst nach Bedarf, kein abschließender Satz jetzt nötig). Jede Waffe hat einen `DamageType` (z.B. Schwert = `PHYSICAL`). Ermöglicht später typ-abhängige Debuffs/Buffs (z.B. "+50% Schaden gegen brennende Gegner") nativ, ohne späteren Umbau der Grundstruktur.
 
