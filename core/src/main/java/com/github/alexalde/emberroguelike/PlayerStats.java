@@ -24,6 +24,9 @@ public class PlayerStats {
     // Wirkt NUR auf den Dash-Cooldown (nicht auf Waffen-Cooldowns - das ist attackSpeedMultipliers
     // Job, siehe GDD 2.1) - 0 = unverändert
     public float cooldownReduction = 0f;
+    // Magnet-Reichweite für Pickups (siehe Pickup.update(), Quest 8) - innerhalb dieser Distanz
+    // fliegen Orbs von selbst zum Spieler, unabhängig vom kleinen, festen Kontakt-Radius
+    public float pickupRange = 60f;
 
     // Vorerst ungenutzte Platzhalter-Felder (siehe GDD 2.1) - für spätere Items/Level-Ups
     // vorgesehen, damit Quest 8 nicht sofort wieder neue Felder nachziehen muss

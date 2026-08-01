@@ -279,6 +279,10 @@ public class Main extends ApplicationAdapter {
             // genauso für Währungs-Pickups, die keine Level-Ups auslösen)
             int levelBeforePickups = player.getLevel();
             for (Pickup pickup : pickups) {
+                // Magnet-Effekt zuerst (siehe Pickup.update()/PlayerStats.pickupRange) - zieht
+                // Orbs heran, bevor auf den (viel kleineren) Kontakt-Radius geprüft wird. Behebt
+                // nebenbei das Problem unerreichbar liegender Drops (z.B. an einer Wandkante).
+                pickup.update(deltaTime, player.getCenter(), player.getStats().pickupRange);
                 if (pickup.isInRange(player.getCenter())) {
                     pickup.collect(player);
                 }
@@ -309,8 +313,13 @@ public class Main extends ApplicationAdapter {
             }
 
             // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8) - genau einmal pro Raumbesuch, nur für
-            // Räume, die überhaupt Gegner hatten
-            if (roomHadEnemies && !anyEnemyAlive && !roomRewardGranted) {
+            // Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty() statt !anyEnemyAlive
+            // (anders als beim Tür-Lock oben): so löst die Belohnung erst aus, wenn der letzte
+            // Gegner komplett entfernt ist (Sterbeanimation fertig, siehe Enemy.isRemovable()),
+            // nicht schon im selben Frame, in dem er den tödlichen Treffer kassiert. Langfristig
+            // soll das ohnehin durch einen Beute-Drop des letzten Gegners ersetzt werden (siehe
+            // ROADMAP) statt eines Auto-Triggers.
+            if (roomHadEnemies && enemies.isEmpty() && !roomRewardGranted) {
                 roomRewardGranted = true;
                 pendingRewardBatches.add(itemPool.pickRandom(3));
             }
