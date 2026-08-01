@@ -97,7 +97,13 @@ public class Player {
     private float currentXp;
     private float xpToNextLevel;
 
-    public Player(float startX, float startY) {
+    // Persistenter, Run-übergreifender Charakterbogen (siehe GDD 3.2/Quest 9) - Player hält nur
+    // eine REFERENZ (Main besitzt/lädt/speichert die eigentliche Instanz), damit sie einen
+    // Player-Neuaufbau in startGame() übersteht. Noch nicht genutzt (siehe Quest 9.4 für die
+    // eigentliche Anwendung gekaufter Upgrades).
+    private MetaProgress metaProgress;
+
+    public Player(float startX, float startY, MetaProgress metaProgress) {
         this.position = new Vector2(startX, startY);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
@@ -105,6 +111,7 @@ public class Player {
         this.level = 1;
         this.currentXp = 0f;
         this.xpToNextLevel = 100f;
+        this.metaProgress = metaProgress;
 
         this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
 
@@ -317,6 +324,11 @@ public class Player {
     // Zahlen-Charakterbogen (siehe GDD 2.1/Quest 8) - Items/Level-Ups greifen hierüber zu
     public PlayerStats getStats() {
         return stats;
+    }
+
+    // Persistenter Charakterbogen (siehe GDD 3.2/Quest 9) - für den Hub-Shop (Quest 9.5)
+    public MetaProgress getMetaProgress() {
+        return metaProgress;
     }
 
     public int getLevel() {
