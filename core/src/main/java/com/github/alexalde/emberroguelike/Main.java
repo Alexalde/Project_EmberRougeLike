@@ -63,6 +63,13 @@ public class Main extends ApplicationAdapter {
     // besitzt/speichert die Instanz, Player hält nur eine Referenz darauf.
     private MetaProgress metaProgress;
 
+    // Drop-Tuning für Meta-Währungen (siehe GDD 3.2/Quest 9) - erster grober Wurf, kein finales
+    // Balancing. Upgrade-Währung: häufige, kleine Menge pro Gegner-Tod. Unlock-Währung: seltener,
+    // an Meilensteine gekoppelt (hier: Raum-Clear statt Einzel-Gegner).
+    private static final float UPGRADE_CURRENCY_DROP_CHANCE = 0.3f;
+    private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
+    private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
+
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
 
@@ -274,6 +281,11 @@ public class Main extends ApplicationAdapter {
             for (Enemy enemy : enemies) {
                 if (enemy.isRemovable()) {
                     pickups.add(new XpPickup(enemy.getCenter(), enemy.getXpValue()));
+                    // Kleine Chance auf zusätzliche Upgrade-Währung (siehe GDD 3.2/Quest 9) -
+                    // erster grober Wurf, kein finales Balancing
+                    if (MathUtils.random() < UPGRADE_CURRENCY_DROP_CHANCE) {
+                        pickups.add(new CurrencyPickup(enemy.getCenter(), MetaCurrencyType.UPGRADE, UPGRADE_CURRENCY_DROP_AMOUNT));
+                    }
                     enemy.dispose();
                 }
             }
@@ -328,6 +340,10 @@ public class Main extends ApplicationAdapter {
             if (roomHadEnemies && enemies.isEmpty() && !roomRewardGranted) {
                 roomRewardGranted = true;
                 pendingRewardBatches.add(itemPool.pickRandom(3));
+                // Zusätzlich seltene Unlock-Währung, an den Meilenstein "Raum geschafft"
+                // gekoppelt (siehe GDD 3.1 "Freischaltungen über Meilensteine") - dropt an der
+                // Spielerposition, da es keinen "letzten Gegner" als Ursprung mehr gibt
+                pickups.add(new CurrencyPickup(player.getCenter(), MetaCurrencyType.UNLOCK, UNLOCK_CURRENCY_DROP_AMOUNT));
             }
 
             if (!player.isAlive()) {
