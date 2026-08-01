@@ -58,6 +58,11 @@ public class Main extends ApplicationAdapter {
     private boolean roomRewardGranted;
     private boolean roomHadEnemies;
 
+    // Persistenter, Run-übergreifender Charakterbogen (siehe GDD 3.2/Quest 9) - einmalig beim
+    // App-Start geladen (siehe create()), überlebt jeden Player-Neuaufbau in startGame(). Main
+    // besitzt/speichert die Instanz, Player hält nur eine Referenz darauf.
+    private MetaProgress metaProgress;
+
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
 
@@ -79,6 +84,7 @@ public class Main extends ApplicationAdapter {
         uiFont = new BitmapFont();
         itemPool = new ItemPool();
         pendingRewardBatches = new LinkedList<>();
+        metaProgress = MetaProgress.load();
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -115,7 +121,7 @@ public class Main extends ApplicationAdapter {
         room = new Room("maps/testmap.tmx");
 
         // Wir instanziieren unseren Spieler bei X:200, Y:200
-        player = new Player(200, 200);
+        player = new Player(200, 200, metaProgress);
 
         enemies = new ArrayList<>();
         for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
