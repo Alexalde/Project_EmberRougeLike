@@ -32,7 +32,7 @@ public class Room {
     // Löst wie eine Tür bei Nähe automatisch aus, ruft aber Main.startRun() auf statt
     // switchRoom() - kein Türnamen-Nachschlagen nötig, da der Run-Startraum einen festen
     // playerSpawn hat. Aktuell nur im Hub vorhanden.
-    private List<Vector2> runEntrances;
+    private List<RunEntrance> runEntrances;
     private int pixelWidth;
     private int pixelHeight;
 
@@ -97,7 +97,7 @@ public class Room {
             } else if ("PlayerSpawn".equals(type)) {
                 playerSpawn = new Vector2(x, y);
             } else if ("RunEntrance".equals(type)) {
-                runEntrances.add(new Vector2(x, y));
+                runEntrances.add(new RunEntrance(new Vector2(x, y)));
             }
         }
     }
@@ -119,7 +119,7 @@ public class Room {
         return playerSpawn;
     }
 
-    public List<Vector2> getRunEntrances() {
+    public List<RunEntrance> getRunEntrances() {
         return runEntrances;
     }
 
@@ -224,6 +224,9 @@ public class Room {
         }
         for (Terminal terminal : terminals) {
             terminal.dispose();
+        }
+        for (RunEntrance runEntrance : runEntrances) {
+            runEntrance.dispose();
         }
         if (terrainRenderer != null) {
             terrainRenderer.dispose();

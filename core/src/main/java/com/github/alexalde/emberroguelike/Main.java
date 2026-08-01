@@ -70,10 +70,6 @@ public class Main extends ApplicationAdapter {
     private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
     private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
 
-    // Auslöse-Radius für RunEntrance-Objekte im Hub (siehe GDD 3.2/Quest 9) - gleiche
-    // Größenordnung wie Door.INTERACTION_RADIUS
-    private static final float RUN_ENTRANCE_RADIUS = 20f;
-
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
 
@@ -338,8 +334,8 @@ public class Main extends ApplicationAdapter {
             // Run-Einstieg im Hub (siehe GDD 3.2/Quest 9) - Auto-Trigger wie bei Door, ruft aber
             // startRun() statt switchRoom() auf (fester Spawnpunkt, kein Türnamen-Nachschlagen).
             // In anderen Räumen ohne RunEntrance-Objekt ist die Liste einfach leer.
-            for (Vector2 runEntrance : room.getRunEntrances()) {
-                if (player.getCenter().dst(runEntrance) <= RUN_ENTRANCE_RADIUS) {
+            for (RunEntrance runEntrance : room.getRunEntrances()) {
+                if (runEntrance.isPlayerInRange(player.getCenter())) {
                     startRun();
                     break; // "room"/"enemies" zeigen jetzt auf den neuen Raum
                 }
@@ -404,6 +400,9 @@ public class Main extends ApplicationAdapter {
         }
         for (Terminal terminal : room.getTerminals()) {
             terminal.draw(batch);
+        }
+        for (RunEntrance runEntrance : room.getRunEntrances()) {
+            runEntrance.draw(batch);
         }
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
         for (Enemy enemy : enemies) {
