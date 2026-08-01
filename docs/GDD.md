@@ -27,7 +27,7 @@ Status: In Erarbeitung, wird Schritt für Schritt gemeinsam ausgebaut.
 
 ### 2.1 Stat-System (Waffen-Basiswert × Spieler-weite Stats)
 
-**Entschieden 2026-07-21** (löst den bisher offenen Punkt "Waffen-Werte/Angriffs-Timing" oben ab): Jede Waffe liefert einen **Basiswert** pro Angriff (`baseDamage`, `baseAttackSpeed`), der Spieler hält **globale Stats**, die diesen Basiswert modifizieren - statt wie bisher (`Sword`/`Bow`) einen fest codierten Einzelwert pro Waffe.
+**Entschieden UND umgesetzt 2026-07-21** (Quest 8, löst den bisher offenen Punkt "Waffen-Werte/Angriffs-Timing" oben ab): Jede Waffe liefert einen **Basiswert** pro Angriff (`baseDamage`, `baseAttackSpeed`), der Spieler hält **globale Stats**, die diesen Basiswert modifizieren - statt wie bisher (`Sword`/`Bow`) einen fest codierten Einzelwert pro Waffe.
 
 **Formel-Grundgerüst:**
 ```
@@ -48,6 +48,9 @@ if (critRoll < player.critChance) {
 | `projectileCount` | Zusätzliche Projektile pro Schuss (z.B. Bogen) |
 | `cooldownReduction` | Wirkt auf Dash-Cooldown, später Waffen-/Fähigkeiten-Cooldowns |
 | `moveSpeed`, `lifeSteal`, `range` | Vorerst ungenutzte Platzhalter-Felder, für spätere Items/Level-Ups vorgesehen |
+| `projectileSpeedMultiplier` | Multiplikator auf die Projektil-Fluggeschwindigkeit (z.B. Bogen) - noch ungenutzt |
+| `xpMultiplier` | Multiplikator auf jede eingesammelte XP-Menge (siehe `XpPickup`) - noch ungenutzt |
+| `bounceCount` | Zusätzliche Abprall-/Ricochet-Ladungen für Projektile mit dieser Eigenschaft (über Items ODER spezifische Waffen) - noch ungenutzt, braucht eigenes Bounce-Verhalten in `Projectile` (Zielwahl beim Abprall etc.) |
 
 **Schadenstypen von Anfang an typisiert** (nicht nur ein generischer "Damage"-Wert): eigenes `DamageType`-Enum (z.B. `PHYSICAL`, `FIRE`, `POISON` - Liste wächst nach Bedarf, kein abschließender Satz jetzt nötig). Jede Waffe hat einen `DamageType` (z.B. Schwert = `PHYSICAL`). Ermöglicht später typ-abhängige Debuffs/Buffs (z.B. "+50% Schaden gegen brennende Gegner") nativ, ohne späteren Umbau der Grundstruktur.
 
@@ -60,6 +63,8 @@ if (critRoll < player.critChance) {
 - **Raum-Belohnungen:** Bestimmte Räume (z.B. Schatzräume, Nach-Kampf-Räume) geben Belohnungen, ggf. mit Auswahl zwischen mehreren Optionen.
 - **Level-Ups:** Sammeln von Erfahrung/In-Run-Ressourcen schaltet während des Runs Stat-Boosts oder Fähigkeiten frei.
 - Einfache Drops (z.B. Heiltränke) sind ergänzend denkbar, aber kein separat priorisiertes System.
+- **Umgesetzt (Quest 8, 2026-07-21):** Jeder Raum-Clear (nicht nur dedizierte Schatzräume) UND jeder Level-Up lösen dieselbe Auswahl aus 3 zufälligen `Item`s aus (`RewardChoiceUI`, siehe ROADMAP Quest 8) - "Schatzräume" als eigener, gezielt markierter Raumtyp ist eine mögliche spätere Verfeinerung, kein aktueller Bestandteil.
+- **XP als Pickup statt Sofort-Gutschrift (präzisiert 2026-07-21):** Gegner geben beim Tod KEINE XP mehr direkt - stattdessen droppen sie einen `XpPickup` an ihrer Position, der erst eingesammelt werden muss (Kontakt mit dem Spieler). Bewusst über eine gemeinsame `Pickup`-Basisklasse gebaut (nicht XP-spezifisch), damit sich später auch 1-2 Meta-Währungen (siehe 3.2) über eine eigene `Pickup`-Unterklasse genauso verhalten, ohne `Pickup` selbst anzufassen.
 
 ### 3.2 Meta-Progression (zwischen Runs)
 

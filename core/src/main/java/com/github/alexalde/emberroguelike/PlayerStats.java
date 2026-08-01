@@ -24,12 +24,22 @@ public class PlayerStats {
     // Wirkt NUR auf den Dash-Cooldown (nicht auf Waffen-Cooldowns - das ist attackSpeedMultipliers
     // Job, siehe GDD 2.1) - 0 = unverändert
     public float cooldownReduction = 0f;
+    // Magnet-Reichweite für Pickups (siehe Pickup.update(), Quest 8) - innerhalb dieser Distanz
+    // fliegen Orbs von selbst zum Spieler, unabhängig vom kleinen, festen Kontakt-Radius
+    public float pickupRange = 60f;
 
     // Vorerst ungenutzte Platzhalter-Felder (siehe GDD 2.1) - für spätere Items/Level-Ups
     // vorgesehen, damit Quest 8 nicht sofort wieder neue Felder nachziehen muss
     public float moveSpeed = 0f;
     public float lifeSteal = 0f;
     public float range = 0f;
+    // Multiplikator auf die Projektil-Fluggeschwindigkeit (z.B. Bogen) - 1 = unverändert
+    public float projectileSpeedMultiplier = 1f;
+    // Multiplikator auf JEDE eingesammelte XP-Menge (siehe XpPickup) - 1 = unverändert
+    public float xpMultiplier = 1f;
+    // Zusätzliche Abprall-/Ricochet-Ladungen für Projektile, die diese Eigenschaft haben (über
+    // Items ODER spezifische Waffen, siehe ROADMAP-Backlog) - 0 = kein Abprall
+    public int bounceCount = 0;
 
     // Erweiterungspunkt für typ-/bedingungsabhängige Effekte (siehe DamageModifier) - bleibt
     // vorerst leer, kein Item braucht das aktuell
