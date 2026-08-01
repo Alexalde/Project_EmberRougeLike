@@ -22,6 +22,8 @@ public class GameSettings {
 
     public static int restartKey = DefaultSettings.RESTART_KEY;
 
+    public static int interactKey = DefaultSettings.INTERACT_KEY;
+
     public static void resetToDefaults() {
         moveUpKeyPrimary = DefaultSettings.MOVE_UP_KEY_PRIMARY;
         moveUpKeySecondary = DefaultSettings.MOVE_UP_KEY_SECONDARY;
@@ -42,5 +44,7 @@ public class GameSettings {
         fullscreenToggleKey = DefaultSettings.FULLSCREEN_TOGGLE_KEY;
 
         restartKey = DefaultSettings.RESTART_KEY;
+
+        interactKey = DefaultSettings.INTERACT_KEY;
     }
 }

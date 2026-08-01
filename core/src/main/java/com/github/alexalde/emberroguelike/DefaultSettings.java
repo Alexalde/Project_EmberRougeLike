@@ -24,4 +24,8 @@ public class DefaultSettings {
     public static final int FULLSCREEN_TOGGLE_KEY = Input.Keys.F11;
 
     public static final int RESTART_KEY = Input.Keys.R;
+
+    // Für Terminal-Interaktion im Hub (siehe GDD 3.2/Quest 9) - anders als bei Door kein
+    // Auto-Trigger, sondern ein bewusster Tastendruck in Reichweite
+    public static final int INTERACT_KEY = Input.Keys.E;
 }

@@ -330,6 +330,21 @@ public class Main extends ApplicationAdapter {
                 }
             }
 
+            // Terminal-Interaktion (siehe GDD 3.2/Quest 9) - anders als Door kein Auto-Trigger,
+            // sondern ein bewusster Tastendruck in Reichweite. Öffnet noch keinen echten Shop
+            // (kommt erst mit UpgradeShopUI in Quest 9.5/9.6) - hier vorerst nur ein Debug-Log
+            // zur Verifikation, dass Objekt-Parsing + Reichweiten-Check funktionieren.
+            if (Gdx.input.isKeyJustPressed(GameSettings.interactKey)) {
+                for (Terminal terminal : room.getTerminals()) {
+                    if (terminal.isPlayerInRange(player.getCenter())) {
+                        if (DebugSettings.logInteraction) {
+                            System.out.println("Terminal aktiviert (Shop-UI kommt in Quest 9.5/9.6)");
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8) - genau einmal pro Raumbesuch, nur für
             // Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty() statt !anyEnemyAlive
             // (anders als beim Tür-Lock oben): so löst die Belohnung erst aus, wenn der letzte
@@ -371,6 +386,9 @@ public class Main extends ApplicationAdapter {
         batch.begin();
         for (Door door : room.getDoors()) {
             door.draw(batch);
+        }
+        for (Terminal terminal : room.getTerminals()) {
+            terminal.draw(batch);
         }
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
         for (Enemy enemy : enemies) {
