@@ -43,6 +43,10 @@ public class Main extends ApplicationAdapter {
     private List<Enemy> enemies;
     private boolean gameOver;
 
+    // Boden-Drops, die erst eingesammelt werden müssen (siehe Pickup, Nutzer-Entscheidung Quest 8:
+    // XP kommt nicht mehr sofort beim Gegner-Tod, sondern als aufsammelbarer Orb)
+    private List<Pickup> pickups;
+
     // Beute-/Level-Up-System (siehe GDD 3.1/Quest 8) - itemPool liefert die ziehbaren Items,
     // pendingRewardBatches sammelt ausgelöste, aber noch nicht angezeigte Auswahlrunden (mehrere
     // Level-Ups im selben Frame sollen nicht verlorengehen), activeReward ist die gerade sichtbare
@@ -102,6 +106,11 @@ public class Main extends ApplicationAdapter {
                 enemy.dispose();
             }
         }
+        if (pickups != null) {
+            for (Pickup pickup : pickups) {
+                pickup.dispose();
+            }
+        }
 
         room = new Room("maps/testmap.tmx");
 
@@ -112,6 +121,7 @@ public class Main extends ApplicationAdapter {
         for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
             enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
         }
+        pickups = new ArrayList<>();
 
         gameOver = false;
 
@@ -129,6 +139,9 @@ public class Main extends ApplicationAdapter {
         for (Enemy enemy : enemies) {
             enemy.dispose();
         }
+        for (Pickup pickup : pickups) {
+            pickup.dispose();
+        }
 
         room = new Room(targetRoomPath);
 
@@ -139,6 +152,7 @@ public class Main extends ApplicationAdapter {
         for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
             enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
         }
+        pickups = new ArrayList<>();
 
         // Beute-Zustand für den neuen Raum zurücksetzen (siehe startGame())
         roomHadEnemies = !enemies.isEmpty();
@@ -245,22 +259,41 @@ public class Main extends ApplicationAdapter {
             }
 
             // Entfernbare Gegner entfernen (tot UND Sterbeanimation fertig, siehe
-            // Enemy.isRemovable()): erst XP vergeben + Texturen aufräumen (sonst Speicherleck),
-            // dann erst aus der Liste löschen (siehe ConcurrentModificationException-Thema von
-            // neulich - deshalb zwei getrennte Schritte statt Aufräumen mitten in der
-            // removeIf-Bedingung). Jeder dabei ausgelöste Level-Up reiht eine eigene
-            // Auswahlrunde ein (siehe pendingRewardBatches) - mehrere Level-Ups im selben Frame
-            // gehen dadurch nicht verloren, sondern werden nacheinander angezeigt.
+            // Enemy.isRemovable()): erst einen XP-Pickup an seiner Position platzieren + Texturen
+            // aufräumen (sonst Speicherleck), dann erst aus der Liste löschen (siehe
+            // ConcurrentModificationException-Thema von neulich - deshalb zwei getrennte Schritte
+            // statt Aufräumen mitten in der removeIf-Bedingung). XP wird NICHT mehr sofort
+            // vergeben (Nutzer-Entscheidung) - der Spieler muss den Orb erst einsammeln (siehe
+            // Pickup-Schleife unten).
             for (Enemy enemy : enemies) {
                 if (enemy.isRemovable()) {
-                    int levelUps = player.addXp(enemy.getXpValue());
-                    for (int i = 0; i < levelUps; i++) {
-                        pendingRewardBatches.add(itemPool.pickRandom(3));
-                    }
+                    pickups.add(new XpPickup(enemy.getCenter(), enemy.getXpValue()));
                     enemy.dispose();
                 }
             }
             enemies.removeIf(Enemy::isRemovable);
+
+            // Eingesammelte Pickups anwenden (siehe Pickup.collect()) - Level-Ups werden über
+            // player.getLevel() VOR/NACH dem Einsammeln erkannt, nicht über einen Rückgabewert,
+            // damit Pickup selbst nichts Level-Up-Spezifisches wissen muss (funktioniert später
+            // genauso für Währungs-Pickups, die keine Level-Ups auslösen)
+            int levelBeforePickups = player.getLevel();
+            for (Pickup pickup : pickups) {
+                if (pickup.isInRange(player.getCenter())) {
+                    pickup.collect(player);
+                }
+            }
+            for (Pickup pickup : pickups) {
+                if (pickup.isCollected()) {
+                    pickup.dispose();
+                }
+            }
+            pickups.removeIf(Pickup::isCollected);
+
+            int levelUps = player.getLevel() - levelBeforePickups;
+            for (int i = 0; i < levelUps; i++) {
+                pendingRewardBatches.add(itemPool.pickRandom(3));
+            }
 
             // Türen bleiben verriegelt, solange noch Gegner LEBEN - bewusst NICHT
             // enemies.isEmpty(), sonst würde eine Leiche, die noch ihre Sterbeanimation
@@ -311,6 +344,9 @@ public class Main extends ApplicationAdapter {
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
         for (Enemy enemy : enemies) {
             enemy.draw(batch);
+        }
+        for (Pickup pickup : pickups) {
+            pickup.draw(batch);
         }
 
         // Debug: rotes Quadrat an der (bereits umgerechneten) Mausposition, zur Kontrolle der Aim-Berechnung
@@ -404,6 +440,9 @@ public class Main extends ApplicationAdapter {
         player.dispose(); // Auch der Spieler muss seinen Speicher aufräumen
         for (Enemy enemy : enemies) {
             enemy.dispose();
+        }
+        for (Pickup pickup : pickups) {
+            pickup.dispose();
         }
         mouseDebugTexture.dispose();
         healthbar.dispose();

@@ -61,6 +61,7 @@ if (critRoll < player.critChance) {
 - **Level-Ups:** Sammeln von Erfahrung/In-Run-Ressourcen schaltet während des Runs Stat-Boosts oder Fähigkeiten frei.
 - Einfache Drops (z.B. Heiltränke) sind ergänzend denkbar, aber kein separat priorisiertes System.
 - **Umgesetzt (Quest 8, 2026-07-21):** Jeder Raum-Clear (nicht nur dedizierte Schatzräume) UND jeder Level-Up lösen dieselbe Auswahl aus 3 zufälligen `Item`s aus (`RewardChoiceUI`, siehe ROADMAP Quest 8) - "Schatzräume" als eigener, gezielt markierter Raumtyp ist eine mögliche spätere Verfeinerung, kein aktueller Bestandteil.
+- **XP als Pickup statt Sofort-Gutschrift (präzisiert 2026-07-21):** Gegner geben beim Tod KEINE XP mehr direkt - stattdessen droppen sie einen `XpPickup` an ihrer Position, der erst eingesammelt werden muss (Kontakt mit dem Spieler). Bewusst über eine gemeinsame `Pickup`-Basisklasse gebaut (nicht XP-spezifisch), damit sich später auch 1-2 Meta-Währungen (siehe 3.2) über eine eigene `Pickup`-Unterklasse genauso verhalten, ohne `Pickup` selbst anzufassen.
 
 ### 3.2 Meta-Progression (zwischen Runs)
 

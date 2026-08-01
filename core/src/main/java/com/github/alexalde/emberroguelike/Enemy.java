@@ -248,7 +248,9 @@ public class Enemy {
         return xpValue;
     }
 
-    private Vector2 getCenter() {
+    // Öffentlich (statt wie bisher privat) - Main braucht die Position beim Tod, um einen
+    // XP-Pickup dort zu platzieren (siehe Quest 8 Pickup-System)
+    public Vector2 getCenter() {
         return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
     }
 
