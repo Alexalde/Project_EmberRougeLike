@@ -332,11 +332,18 @@ public class Main extends ApplicationAdapter {
         // DebugSettings.renderStats - bewusst nur Debug-Text mit der eingebauten
         // Standard-Schrift, kein gestaltetes UI-Element (siehe ROADMAP Sidequest 1.4)
         if (DebugSettings.renderStats) {
+            PlayerStats stats = player.getStats();
             String statsText = String.format(
-                "HP: %.0f/%.0f\nSpeed: %.0f\nDash-CD: %.2f",
-                player.getHealth(), player.getMaxHealth(), player.getSpeed(), Math.max(0f, player.getDashCooldownRemaining())
+                "HP: %.0f/%.0f\nSpeed: %.0f\nDash-CD: %.2f\n"
+                    + "Level %d (%.0f/%.0f XP)\n"
+                    + "Dmg x%.2f  AtkSpd x%.2f  CDR %.0f%%\n"
+                    + "Crit %.0f%% (x%.2f)  Proj +%d",
+                player.getHealth(), player.getMaxHealth(), player.getSpeed(), Math.max(0f, player.getDashCooldownRemaining()),
+                player.getLevel(), player.getCurrentXp(), player.getXpToNextLevel(),
+                stats.damageMultiplier, stats.attackSpeedMultiplier, stats.cooldownReduction * 100,
+                stats.critChance * 100, stats.critDamageMultiplier, stats.projectileCount
             );
-            uiFont.draw(batch, statsText, 8f, 60f);
+            uiFont.draw(batch, statsText, 8f, 112f);
         }
 
         batch.end();
