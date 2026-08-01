@@ -70,11 +70,7 @@
   <object id="6" type="EnemySpawn" x="261.188" y="118.885">
    <point/>
   </object>
-  <object id="7" name="west" type="Door" x="16" y="176">
-   <properties>
-    <property name="targetDoorName" value="east"/>
-    <property name="targetRoom" value="maps/hub.tmx"/>
-   </properties>
+  <object id="7" type="PlayerSpawn" x="200" y="200">
    <point/>
   </object>
  </objectgroup>

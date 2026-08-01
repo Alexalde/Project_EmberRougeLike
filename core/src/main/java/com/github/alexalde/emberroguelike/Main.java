@@ -70,6 +70,10 @@ public class Main extends ApplicationAdapter {
     private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
     private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
 
+    // Auslöse-Radius für RunEntrance-Objekte im Hub (siehe GDD 3.2/Quest 9) - gleiche
+    // Größenordnung wie Door.INTERACTION_RADIUS
+    private static final float RUN_ENTRANCE_RADIUS = 20f;
+
     // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
 
@@ -104,15 +108,49 @@ public class Main extends ApplicationAdapter {
         pixmap.dispose();
     }
 
-    // Baut Raum/Spieler/Gegner komplett neu auf - beim allerersten Start UND bei jedem Neustart
-    // nach Game Over. Alte Objekte vorher aufräumen, sonst verlieren wir bei jedem Neustart
-    // Texturen/GPU-Ressourcen (Speicherleck)
+    // Setzt beim allerersten Start UND nach jedem Tod komplett zurück: frischer Player (siehe
+    // GDD 3.2/Quest 9 - Permanent-Upgrades werden hier in Quest 9.4 angewendet), Landung im Hub
+    // an dessen festem playerSpawn (siehe Room.getPlayerSpawn() - UNABHÄNGIG vom Door-System,
+    // Nutzer-Entscheidung 2026-07-21: kein begehbarer Rückweg aus einem Run in den Hub, nur Tod
+    // führt zurück).
     private void startGame() {
-        if (room != null) {
-            room.dispose();
-        }
         if (player != null) {
             player.dispose();
+        }
+        player = new Player(metaProgress);
+
+        Room hub = new Room("maps/hub.tmx");
+        enterRoom(hub, hub.getPlayerSpawn());
+
+        gameOver = false;
+        pendingRewardBatches.clear();
+        activeReward = null;
+    }
+
+    // Startet einen neuen Run - vom Hub aus über ein RunEntrance-Objekt ausgelöst (siehe
+    // Main.render()). Fester Einstiegspunkt (Room.getPlayerSpawn()), bewusst UNABHÄNGIG vom
+    // Door-System (Nutzer-Entscheidung 2026-07-21: einheitlicher, fester Run-Start, später auch
+    // für mehrere Stages gedacht) - kein Türnamen-Nachschlagen nötig.
+    private void startRun() {
+        Room dungeon = new Room("maps/testmap.tmx");
+        enterRoom(dungeon, dungeon.getPlayerSpawn());
+    }
+
+    // Wechselt in einen anderen Raum durch eine Tür - der Spieler landet an der passenden Tür
+    // im Zielraum (Door-basiertes Netzwerk, siehe Quest 6)
+    private void switchRoom(String targetRoomPath, String targetDoorName) {
+        Room newRoom = new Room(targetRoomPath);
+        Door entryDoor = newRoom.getDoorByName(targetDoorName);
+        enterRoom(newRoom, entryDoor.getEntryPosition());
+    }
+
+    // Gemeinsame Basis für startGame()/startRun()/switchRoom(): Raum/Gegner/Pickups komplett neu
+    // aufbauen, Spieler an "spawnCenter" platzieren. Alte Objekte vorher aufräumen, sonst
+    // verlieren wir bei jedem Wechsel Texturen/GPU-Ressourcen (Speicherleck). Player selbst wird
+    // HIER nicht (neu) erstellt - nur startGame() tut das.
+    private void enterRoom(Room newRoom, Vector2 spawnCenter) {
+        if (room != null) {
+            room.dispose();
         }
         if (enemies != null) {
             for (Enemy enemy : enemies) {
@@ -125,49 +163,16 @@ public class Main extends ApplicationAdapter {
             }
         }
 
-        room = new Room("maps/testmap.tmx");
-
-        // Wir instanziieren unseren Spieler bei X:200, Y:200
-        player = new Player(200, 200, metaProgress);
+        room = newRoom;
+        player.setCenter(spawnCenter);
 
         enemies = new ArrayList<>();
         for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
             enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
         }
         pickups = new ArrayList<>();
-
-        gameOver = false;
 
         // Beute-Zustand für den (neuen) Raum zurücksetzen - siehe roomHadEnemies/roomRewardGranted
-        roomHadEnemies = !enemies.isEmpty();
-        roomRewardGranted = false;
-        pendingRewardBatches.clear();
-        activeReward = null;
-    }
-
-    // Wechselt in einen anderen Raum durch eine Tür - Raum/Gegner werden komplett neu aufgebaut
-    // (wie bei startGame()), der Spieler landet an der passenden Tür im Zielraum
-    private void switchRoom(String targetRoomPath, String targetDoorName) {
-        room.dispose();
-        for (Enemy enemy : enemies) {
-            enemy.dispose();
-        }
-        for (Pickup pickup : pickups) {
-            pickup.dispose();
-        }
-
-        room = new Room(targetRoomPath);
-
-        Door entryDoor = room.getDoorByName(targetDoorName);
-        player.setCenter(entryDoor.getEntryPosition());
-
-        enemies = new ArrayList<>();
-        for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
-            enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
-        }
-        pickups = new ArrayList<>();
-
-        // Beute-Zustand für den neuen Raum zurücksetzen (siehe startGame())
         roomHadEnemies = !enemies.isEmpty();
         roomRewardGranted = false;
     }
@@ -327,6 +332,16 @@ public class Main extends ApplicationAdapter {
                 if (door.isPlayerInRange(player.getCenter())) {
                     switchRoom(door.getTargetRoom(), door.getTargetDoorName());
                     break; // "room"/"enemies" zeigen jetzt auf den neuen Raum - alte Türen-Liste nicht weiter durchgehen
+                }
+            }
+
+            // Run-Einstieg im Hub (siehe GDD 3.2/Quest 9) - Auto-Trigger wie bei Door, ruft aber
+            // startRun() statt switchRoom() auf (fester Spawnpunkt, kein Türnamen-Nachschlagen).
+            // In anderen Räumen ohne RunEntrance-Objekt ist die Liste einfach leer.
+            for (Vector2 runEntrance : room.getRunEntrances()) {
+                if (player.getCenter().dst(runEntrance) <= RUN_ENTRANCE_RADIUS) {
+                    startRun();
+                    break; // "room"/"enemies" zeigen jetzt auf den neuen Raum
                 }
             }
 
