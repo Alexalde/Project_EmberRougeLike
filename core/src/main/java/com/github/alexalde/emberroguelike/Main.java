@@ -479,7 +479,12 @@ public class Main extends ApplicationAdapter {
                 stats.critChance * 100, stats.critDamageMultiplier, stats.projectileCount,
                 metaProgress.getCurrency(MetaCurrencyType.UPGRADE), metaProgress.getCurrency(MetaCurrencyType.UNLOCK)
             );
-            uiFont.draw(batch, statsText, 8f, 112f);
+            // Startet knapp unterhalb der Healthbar (die bei y=320..352 liegt, siehe
+            // Healthbar.draw()) mit reichlich Platz nach unten - die feste virtuelle Auflösung
+            // (siehe GameConfig.WORLD_HEIGHT, Quest 7.1 Letterboxing) ändert sich beim
+            // Fenster-Resize NICHT, ein zu niedriger y-Wert läuft deshalb unten aus dem Bild,
+            // egal wie das Fenster skaliert wird
+            uiFont.draw(batch, statsText, 8f, 300f);
         }
 
         batch.end();
