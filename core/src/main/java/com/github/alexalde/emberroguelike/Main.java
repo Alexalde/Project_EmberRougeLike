@@ -75,7 +75,6 @@ public class Main extends ApplicationAdapter {
     private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
     private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
 
-    // TODO: Debug-Platzhalter für den Mauszeiger, entfernen bzw. durch echten Cursor/Crosshair ersetzen (Quest 7)
     private Texture mouseDebugTexture;
 
     @Override

@@ -70,6 +70,7 @@ if (critRoll < player.critChance) {
 
 - **Kombination aus beidem:** Permanente Währung, die zwischen Runs in einem Hub in dauerhafte Upgrades investiert werden kann, **und** freischaltbarer Content über Meilensteine (z.B. neue Waffen nach bestimmten Erfolgen).
 - Darf komplexer werden, ist aber gegenüber dem Kern-Gameplay-Gefühl (Movement/Dash/Combat) niedriger priorisiert — Details (genaue Upgrade-Liste, Hub-Struktur) folgen, sobald das Kern-Gameplay steht.
+- **Umgesetzt (Quest 9, 2026-08-02):** Zwei Währungen (`UPGRADE`, `UNLOCK`), gespeichert in einer eigenen `save.json` (siehe ROADMAP Quest 9 für alle technischen Details). Der Hub ist ein physischer, feindfreier Raum mit einem zentralen Terminal, an dem permanente Stat-Upgrades gekauft werden - aktuell ein einziges (`+25 Max-HP`). `UNLOCK`-Währung ist verdienbar/speicherbar, hat aber noch keine Ausgabemöglichkeit (kein Waffen-Freischalt-System existiert bisher) - bewusst als nächster Schritt zurückgestellt.
 
 ## 4. Level- & Raumkonzept
 
