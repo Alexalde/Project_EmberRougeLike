@@ -75,6 +75,13 @@ public class Main extends ApplicationAdapter {
     private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
     private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
 
+    // Debug-Menü (siehe DebugValue/DebugMenuUI) - debugValues wird EINMALIG in create() gebaut,
+    // die Lambdas greifen über die Instanzfelder "player"/"metaProgress" zu, bleiben also auch
+    // nach einer Player-Neuerstellung (Tod -> startGame()) gültig. activeDebugMenu ist null,
+    // solange das Menü geschlossen ist.
+    private List<DebugValue> debugValues;
+    private DebugMenuUI activeDebugMenu;
+
     private Texture mouseDebugTexture;
 
     @Override
@@ -101,6 +108,7 @@ public class Main extends ApplicationAdapter {
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         startGame();
+        debugValues = buildDebugValues();
 
         Pixmap pixmap = new Pixmap(8, 8, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.RED);
@@ -178,6 +186,61 @@ public class Main extends ApplicationAdapter {
         roomRewardGranted = false;
     }
 
+    // Genau EINMAL in create() aufgerufen (siehe DebugValue-Klassenkommentar) - die Lambdas
+    // greifen über "player"/"metaProgress" auf die aktuellen Instanzfelder zu, nicht auf eine hier
+    // eingefangene Kopie, bleiben also auch nach einer Player-Neuerstellung (Tod -> startGame())
+    // gültig.
+    private List<DebugValue> buildDebugValues() {
+        List<DebugValue> values = new ArrayList<>();
+        values.add(new DebugValue("HP", player::getHealth, player::setHealth, 10f, "%.0f"));
+        values.add(new DebugValue("Max-HP", player::getMaxHealth, player::setMaxHealth, 10f, "%.0f"));
+        values.add(new DebugValue("Speed", player::getSpeed, player::setSpeed, 25f, "%.0f"));
+        values.add(new DebugValue(
+            "Dash-CD", player::getDashCooldownRemaining, player::setDashCooldownRemaining, 0.5f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "Dmg-Multiplikator", () -> player.getStats().damageMultiplier, v -> player.getStats().damageMultiplier = v, 0.1f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "AtkSpd-Multiplikator", () -> player.getStats().attackSpeedMultiplier,
+            v -> player.getStats().attackSpeedMultiplier = v, 0.1f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "Cooldown-Reduction", () -> player.getStats().cooldownReduction, v -> player.getStats().cooldownReduction = v, 0.05f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "Crit-Chance", () -> player.getStats().critChance, v -> player.getStats().critChance = v, 0.05f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "Crit-Dmg-Multiplikator", () -> player.getStats().critDamageMultiplier,
+            v -> player.getStats().critDamageMultiplier = v, 0.1f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "Projectile-Count", () -> (float) player.getStats().projectileCount,
+            v -> player.getStats().projectileCount = Math.round(v), 1f, "%.0f"
+        ));
+        values.add(new DebugValue(
+            "Upgrade-Waehrung", () -> metaProgress.upgradeCurrency, v -> metaProgress.upgradeCurrency = v, 5f, "%.0f"
+        ));
+        values.add(new DebugValue(
+            "Unlock-Waehrung", () -> metaProgress.unlockCurrency, v -> metaProgress.unlockCurrency = v, 5f, "%.0f"
+        ));
+        return values;
+    }
+
+    // An DebugMenuUIs "Alles zurücksetzen"-Button verdrahtet - setzt jeden Debug-Wert auf seinen
+    // bei Erstellung gesnapshotteten Ausgangswert zurück UND macht Terminal-Käufe rückgängig
+    // (siehe Nutzer-Wunsch: Upgrades "entkaufen", Währung frei anpassen können)
+    private void resetAllDebugValues() {
+        for (DebugValue value : debugValues) {
+            value.reset();
+        }
+        metaProgress.purchasedUpgradeIds.clear();
+        metaProgress.upgradeCurrency = 0f;
+        metaProgress.unlockCurrency = 0f;
+        metaProgress.save();
+    }
+
     // Kamera folgt dem Spieler, geklammert an die Raumgrenzen - ist der Raum in einer
     // Dimension kleiner/gleich dem Bildschirm, wird stattdessen auf die Raummitte zentriert
     // (sonst wäre der Klammer-Bereich ungültig: obere Grenze kleiner als untere)
@@ -244,6 +307,14 @@ public class Main extends ApplicationAdapter {
             }
         }
 
+        // Unconditional (läuft auch während activeReward/activeShop offen sind) - Öffnen/
+        // Schließen per Toggle-Taste, unabhängig vom sonstigen Pause-Gate-Zustand
+        if (Gdx.input.isKeyJustPressed(GameSettings.debugMenuToggleKey)) {
+            activeDebugMenu = (activeDebugMenu == null)
+                ? new DebugMenuUI(debugValues, metaProgress::save, this::resetAllDebugValues)
+                : null;
+        }
+
         // Bildschirm-Mausposition in die logische Welt-Koordinate umrechnen - berücksichtigt
         // automatisch den aktuellen Skalierungsfaktor UND die Letterboxing-Verschiebung
         Vector3 mouseScreenCoords = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
@@ -264,8 +335,14 @@ public class Main extends ApplicationAdapter {
         }
 
         // 1. Logik updaten - pausiert komplett, solange eine Beute-/Level-Up-Auswahl läuft (wie
-        // beim bestehenden Game-Over-Gate) ODER Game Over eingetreten ist
-        if (activeReward != null) {
+        // beim bestehenden Game-Over-Gate) ODER Game Over eingetreten ist. Das Debug-Menü hat die
+        // höchste Priorität - pausiert auch mitten in einer Reward-/Shop-Auswahl.
+        if (activeDebugMenu != null) {
+            activeDebugMenu.update(getUiMousePosition());
+            if (activeDebugMenu.isCloseRequested()) {
+                activeDebugMenu = null;
+            }
+        } else if (activeReward != null) {
             activeReward.update(getUiMousePosition());
 
             Item confirmedChoice = activeReward.getConfirmedChoice();
@@ -514,6 +591,20 @@ public class Main extends ApplicationAdapter {
             batch.setProjectionMatrix(uiCamera.combined);
             batch.begin();
             activeShop.renderText(batch, uiFont);
+            batch.end();
+        }
+
+        // Debug-Menü (siehe DebugValue/DebugMenuUI) - gleiches zweigeteiltes Render-Muster wie
+        // activeReward/activeShop oben
+        if (activeDebugMenu != null) {
+            shapeRenderer.setProjectionMatrix(uiCamera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            activeDebugMenu.renderRows(shapeRenderer);
+            shapeRenderer.end();
+
+            batch.setProjectionMatrix(uiCamera.combined);
+            batch.begin();
+            activeDebugMenu.renderText(batch, uiFont);
             batch.end();
         }
 

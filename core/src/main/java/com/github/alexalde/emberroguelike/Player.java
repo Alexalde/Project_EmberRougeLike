@@ -325,6 +325,12 @@ public class Player {
         return health;
     }
 
+    // Für das Debug-Menü (siehe DebugValue/DebugMenuUI) - geklemmt auf [0, maxHealth], damit z.B.
+    // Healthbar.draw()s Prozent-Berechnung nicht über 100% hinausläuft
+    public void setHealth(float health) {
+        this.health = MathUtils.clamp(health, 0f, maxHealth);
+    }
+
     public float getMaxHealth() {
         return maxHealth;
     }
@@ -336,13 +342,30 @@ public class Player {
         this.maxHealth += amount;
     }
 
+    // Für das Debug-Menü (siehe DebugValue/DebugMenuUI) - geklemmt auf mindestens 1, sonst würde
+    // eine Healthbar-Prozentrechnung durch 0 teilen
+    public void setMaxHealth(float maxHealth) {
+        this.maxHealth = Math.max(1f, maxHealth);
+    }
+
     // Für die Debug-Stat-Anzeige (Sidequest 1.4)
     public float getSpeed() {
         return speed;
     }
 
+    // Für das Debug-Menü (siehe DebugValue/DebugMenuUI)
+    public void setSpeed(float speed) {
+        this.speed = Math.max(0f, speed);
+    }
+
     public float getDashCooldownRemaining() {
         return dashCooldownRemaining;
+    }
+
+    // Für das Debug-Menü (siehe DebugValue/DebugMenuUI) - z.B. auf 0 setzen, um den Dash sofort
+    // wieder nutzbar zu machen
+    public void setDashCooldownRemaining(float dashCooldownRemaining) {
+        this.dashCooldownRemaining = Math.max(0f, dashCooldownRemaining);
     }
 
     // Zahlen-Charakterbogen (siehe GDD 2.1/Quest 8) - Items/Level-Ups greifen hierüber zu
