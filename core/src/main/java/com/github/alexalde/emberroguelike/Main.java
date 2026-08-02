@@ -104,15 +104,49 @@ public class Main extends ApplicationAdapter {
         pixmap.dispose();
     }
 
-    // Baut Raum/Spieler/Gegner komplett neu auf - beim allerersten Start UND bei jedem Neustart
-    // nach Game Over. Alte Objekte vorher aufräumen, sonst verlieren wir bei jedem Neustart
-    // Texturen/GPU-Ressourcen (Speicherleck)
+    // Setzt beim allerersten Start UND nach jedem Tod komplett zurück: frischer Player (siehe
+    // GDD 3.2/Quest 9 - Permanent-Upgrades werden hier in Quest 9.4 angewendet), Landung im Hub
+    // an dessen festem playerSpawn (siehe Room.getPlayerSpawn() - UNABHÄNGIG vom Door-System,
+    // Nutzer-Entscheidung 2026-07-21: kein begehbarer Rückweg aus einem Run in den Hub, nur Tod
+    // führt zurück).
     private void startGame() {
-        if (room != null) {
-            room.dispose();
-        }
         if (player != null) {
             player.dispose();
+        }
+        player = new Player(metaProgress);
+
+        Room hub = new Room("maps/hub.tmx");
+        enterRoom(hub, hub.getPlayerSpawn());
+
+        gameOver = false;
+        pendingRewardBatches.clear();
+        activeReward = null;
+    }
+
+    // Startet einen neuen Run - vom Hub aus über ein RunEntrance-Objekt ausgelöst (siehe
+    // Main.render()). Fester Einstiegspunkt (Room.getPlayerSpawn()), bewusst UNABHÄNGIG vom
+    // Door-System (Nutzer-Entscheidung 2026-07-21: einheitlicher, fester Run-Start, später auch
+    // für mehrere Stages gedacht) - kein Türnamen-Nachschlagen nötig.
+    private void startRun() {
+        Room dungeon = new Room("maps/testmap.tmx");
+        enterRoom(dungeon, dungeon.getPlayerSpawn());
+    }
+
+    // Wechselt in einen anderen Raum durch eine Tür - der Spieler landet an der passenden Tür
+    // im Zielraum (Door-basiertes Netzwerk, siehe Quest 6)
+    private void switchRoom(String targetRoomPath, String targetDoorName) {
+        Room newRoom = new Room(targetRoomPath);
+        Door entryDoor = newRoom.getDoorByName(targetDoorName);
+        enterRoom(newRoom, entryDoor.getEntryPosition());
+    }
+
+    // Gemeinsame Basis für startGame()/startRun()/switchRoom(): Raum/Gegner/Pickups komplett neu
+    // aufbauen, Spieler an "spawnCenter" platzieren. Alte Objekte vorher aufräumen, sonst
+    // verlieren wir bei jedem Wechsel Texturen/GPU-Ressourcen (Speicherleck). Player selbst wird
+    // HIER nicht (neu) erstellt - nur startGame() tut das.
+    private void enterRoom(Room newRoom, Vector2 spawnCenter) {
+        if (room != null) {
+            room.dispose();
         }
         if (enemies != null) {
             for (Enemy enemy : enemies) {
@@ -125,49 +159,16 @@ public class Main extends ApplicationAdapter {
             }
         }
 
-        room = new Room("maps/testmap.tmx");
-
-        // Wir instanziieren unseren Spieler bei X:200, Y:200
-        player = new Player(200, 200, metaProgress);
+        room = newRoom;
+        player.setCenter(spawnCenter);
 
         enemies = new ArrayList<>();
         for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
             enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
         }
         pickups = new ArrayList<>();
-
-        gameOver = false;
 
         // Beute-Zustand für den (neuen) Raum zurücksetzen - siehe roomHadEnemies/roomRewardGranted
-        roomHadEnemies = !enemies.isEmpty();
-        roomRewardGranted = false;
-        pendingRewardBatches.clear();
-        activeReward = null;
-    }
-
-    // Wechselt in einen anderen Raum durch eine Tür - Raum/Gegner werden komplett neu aufgebaut
-    // (wie bei startGame()), der Spieler landet an der passenden Tür im Zielraum
-    private void switchRoom(String targetRoomPath, String targetDoorName) {
-        room.dispose();
-        for (Enemy enemy : enemies) {
-            enemy.dispose();
-        }
-        for (Pickup pickup : pickups) {
-            pickup.dispose();
-        }
-
-        room = new Room(targetRoomPath);
-
-        Door entryDoor = room.getDoorByName(targetDoorName);
-        player.setCenter(entryDoor.getEntryPosition());
-
-        enemies = new ArrayList<>();
-        for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
-            enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
-        }
-        pickups = new ArrayList<>();
-
-        // Beute-Zustand für den neuen Raum zurücksetzen (siehe startGame())
         roomHadEnemies = !enemies.isEmpty();
         roomRewardGranted = false;
     }
@@ -330,6 +331,31 @@ public class Main extends ApplicationAdapter {
                 }
             }
 
+            // Run-Einstieg im Hub (siehe GDD 3.2/Quest 9) - Auto-Trigger wie bei Door, ruft aber
+            // startRun() statt switchRoom() auf (fester Spawnpunkt, kein Türnamen-Nachschlagen).
+            // In anderen Räumen ohne RunEntrance-Objekt ist die Liste einfach leer.
+            for (RunEntrance runEntrance : room.getRunEntrances()) {
+                if (runEntrance.isPlayerInRange(player.getCenter())) {
+                    startRun();
+                    break; // "room"/"enemies" zeigen jetzt auf den neuen Raum
+                }
+            }
+
+            // Terminal-Interaktion (siehe GDD 3.2/Quest 9) - anders als Door kein Auto-Trigger,
+            // sondern ein bewusster Tastendruck in Reichweite. Öffnet noch keinen echten Shop
+            // (kommt erst mit UpgradeShopUI in Quest 9.5/9.6) - hier vorerst nur ein Debug-Log
+            // zur Verifikation, dass Objekt-Parsing + Reichweiten-Check funktionieren.
+            if (Gdx.input.isKeyJustPressed(GameSettings.interactKey)) {
+                for (Terminal terminal : room.getTerminals()) {
+                    if (terminal.isPlayerInRange(player.getCenter())) {
+                        if (DebugSettings.logInteraction) {
+                            System.out.println("Terminal aktiviert (Shop-UI kommt in Quest 9.5/9.6)");
+                        }
+                        break;
+                    }
+                }
+            }
+
             // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8) - genau einmal pro Raumbesuch, nur für
             // Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty() statt !anyEnemyAlive
             // (anders als beim Tür-Lock oben): so löst die Belohnung erst aus, wenn der letzte
@@ -371,6 +397,12 @@ public class Main extends ApplicationAdapter {
         batch.begin();
         for (Door door : room.getDoors()) {
             door.draw(batch);
+        }
+        for (Terminal terminal : room.getTerminals()) {
+            terminal.draw(batch);
+        }
+        for (RunEntrance runEntrance : room.getRunEntrances()) {
+            runEntrance.draw(batch);
         }
         player.draw(batch); // Wir übergeben dem Spieler die "Mal-Hand"
         for (Enemy enemy : enemies) {

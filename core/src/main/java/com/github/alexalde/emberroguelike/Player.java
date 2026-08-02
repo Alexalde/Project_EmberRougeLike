@@ -103,8 +103,11 @@ public class Player {
     // eigentliche Anwendung gekaufter Upgrades).
     private MetaProgress metaProgress;
 
-    public Player(float startX, float startY, MetaProgress metaProgress) {
-        this.position = new Vector2(startX, startY);
+    // Startet ohne feste Position - der Aufrufer (Main) setzt sie direkt danach über
+    // setCenter() auf den jeweiligen Raum-Spawnpunkt (siehe Room.getPlayerSpawn()/
+    // Door.getEntryPosition(), Quest 9)
+    public Player(MetaProgress metaProgress) {
+        this.position = new Vector2(0, 0);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
         this.stats = new PlayerStats();

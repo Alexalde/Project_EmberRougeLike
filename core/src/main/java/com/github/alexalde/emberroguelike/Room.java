@@ -21,6 +21,18 @@ public class Room {
     private OrthogonalTiledMapRenderer renderer;
     private List<Vector2> enemySpawnPoints;
     private List<Door> doors;
+    // Interaktive Objekte (siehe Terminal, GDD 3.2/Quest 9) - aktuell nur im Hub-Raum vorhanden,
+    // andere Räume haben einfach eine leere Liste
+    private List<Terminal> terminals;
+    // Fester Einstiegspunkt, UNABHÄNGIG vom Door-System (siehe GDD 3.2/Quest 9, Nutzer-
+    // Entscheidung 2026-07-21) - für Räume, die man nicht über eine benannte Tür betritt (Hub,
+    // Run-Startraum). null, wenn dieser Raum keinen hat (z.B. Räume, die nur über Türen erreicht
+    // werden).
+    private Vector2 playerSpawn;
+    // Löst wie eine Tür bei Nähe automatisch aus, ruft aber Main.startRun() auf statt
+    // switchRoom() - kein Türnamen-Nachschlagen nötig, da der Run-Startraum einen festen
+    // playerSpawn hat. Aktuell nur im Hub vorhanden.
+    private List<RunEntrance> runEntrances;
     private int pixelWidth;
     private int pixelHeight;
 
@@ -38,6 +50,8 @@ public class Room {
         this.renderer = new OrthogonalTiledMapRenderer(map);
         this.enemySpawnPoints = new ArrayList<>();
         this.doors = new ArrayList<>();
+        this.terminals = new ArrayList<>();
+        this.runEntrances = new ArrayList<>();
 
         int tileWidth = map.getProperties().get("tilewidth", Integer.class);
         int tileHeight = map.getProperties().get("tileheight", Integer.class);
@@ -78,6 +92,12 @@ public class Room {
                 String targetRoom = object.getProperties().get("targetRoom", String.class);
                 String targetDoorName = object.getProperties().get("targetDoorName", String.class);
                 doors.add(new Door(new Vector2(x, y), name, targetRoom, targetDoorName));
+            } else if ("Terminal".equals(type)) {
+                terminals.add(new Terminal(new Vector2(x, y)));
+            } else if ("PlayerSpawn".equals(type)) {
+                playerSpawn = new Vector2(x, y);
+            } else if ("RunEntrance".equals(type)) {
+                runEntrances.add(new RunEntrance(new Vector2(x, y)));
             }
         }
     }
@@ -88,6 +108,19 @@ public class Room {
 
     public List<Door> getDoors() {
         return doors;
+    }
+
+    public List<Terminal> getTerminals() {
+        return terminals;
+    }
+
+    // null, wenn dieser Raum keinen festen Einstiegspunkt hat (siehe playerSpawn oben)
+    public Vector2 getPlayerSpawn() {
+        return playerSpawn;
+    }
+
+    public List<RunEntrance> getRunEntrances() {
+        return runEntrances;
     }
 
     public Door getDoorByName(String doorName) {
@@ -188,6 +221,12 @@ public class Room {
         map.dispose();
         for (Door door : doors) {
             door.dispose();
+        }
+        for (Terminal terminal : terminals) {
+            terminal.dispose();
+        }
+        for (RunEntrance runEntrance : runEntrances) {
+            runEntrance.dispose();
         }
         if (terrainRenderer != null) {
             terrainRenderer.dispose();
