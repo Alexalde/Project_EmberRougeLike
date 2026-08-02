@@ -55,6 +55,8 @@ public class Main extends ApplicationAdapter {
     private ItemPool itemPool;
     private Queue<List<Item>> pendingRewardBatches;
     private RewardChoiceUI activeReward;
+    // Aktuell geöffneter Hub-Terminal-Shop (siehe GDD 3.2/Quest 9) - null, solange keiner offen ist
+    private UpgradeShopUI activeShop;
     private boolean roomRewardGranted;
     private boolean roomHadEnemies;
 
@@ -207,6 +209,15 @@ public class Main extends ApplicationAdapter {
         camera.update();
     }
 
+    // Maus-Position in uiCamera-Koordinaten (eigene Umrechnung, da UI-Elemente wie RewardChoiceUI/
+    // UpgradeShopUI in Bildschirm-fixen UI-Koordinaten liegen, nicht in Welt-Koordinaten wie
+    // mouseWorldPosition) - gemeinsamer Helfer statt Duplikat in jedem Pause-Gate-Zweig
+    private Vector2 getUiMousePosition() {
+        Vector3 uiMouseScreenCoords = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
+        uiCamera.unproject(uiMouseScreenCoords, viewportX, viewportY, viewportWidth, viewportHeight);
+        return new Vector2(uiMouseScreenCoords.x, uiMouseScreenCoords.y);
+    }
+
     // Größtmöglicher GANZZAHLIGER Skalierungsfaktor, der noch aufs Fenster passt - Rest wird
     // als schwarzer Rand (Letterboxing) aufgefüllt, damit jedes Pixel gleichmäßig groß bleibt
     private void updateViewport(int screenWidth, int screenHeight) {
@@ -256,18 +267,29 @@ public class Main extends ApplicationAdapter {
         // 1. Logik updaten - pausiert komplett, solange eine Beute-/Level-Up-Auswahl läuft (wie
         // beim bestehenden Game-Over-Gate) ODER Game Over eingetreten ist
         if (activeReward != null) {
-            // Maus-Position in uiCamera-Koordinaten (eigene Umrechnung, da die Karten in
-            // Bildschirm-fixen UI-Koordinaten liegen, nicht in Welt-Koordinaten wie mouseWorldPosition)
-            Vector3 uiMouseScreenCoords = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
-            uiCamera.unproject(uiMouseScreenCoords, viewportX, viewportY, viewportWidth, viewportHeight);
-            Vector2 uiMousePosition = new Vector2(uiMouseScreenCoords.x, uiMouseScreenCoords.y);
-
-            activeReward.update(uiMousePosition);
+            activeReward.update(getUiMousePosition());
 
             Item confirmedChoice = activeReward.getConfirmedChoice();
             if (confirmedChoice != null) {
                 confirmedChoice.apply(player.getStats());
                 activeReward = null;
+            }
+        } else if (activeShop != null) {
+            activeShop.update(getUiMousePosition());
+
+            // Kauf-Anfrage verarbeiten (siehe UpgradeShopUI.consumePurchaseRequest()) - spendCurrency()
+            // prüft das Guthaben nochmal selbst, UpgradeShopUI hat Kauf-Anfragen dafür zwar schon
+            // vorgefiltert, aber doppelt genäht hält hier besser (kein stiller Datenverlust bei
+            // einem eventuellen Bug in der UI-seitigen Vorfilterung)
+            PermanentUpgrade purchaseRequest = activeShop.consumePurchaseRequest();
+            if (purchaseRequest != null && metaProgress.spendCurrency(purchaseRequest.getCurrencyType(), purchaseRequest.getCost())) {
+                metaProgress.purchasedUpgradeIds.add(purchaseRequest.getId());
+                purchaseRequest.apply(player); // sofort wirksam, nicht erst beim nächsten Run
+                metaProgress.save();
+            }
+
+            if (activeShop.isCloseRequested()) {
+                activeShop = null;
             }
         } else if (!gameOver) {
             player.update(deltaTime, enemies, mouseWorldPosition, room);
@@ -301,6 +323,7 @@ public class Main extends ApplicationAdapter {
             // damit Pickup selbst nichts Level-Up-Spezifisches wissen muss (funktioniert später
             // genauso für Währungs-Pickups, die keine Level-Ups auslösen)
             int levelBeforePickups = player.getLevel();
+            boolean currencyCollected = false;
             for (Pickup pickup : pickups) {
                 // Magnet-Effekt zuerst (siehe Pickup.update()/PlayerStats.pickupRange) - zieht
                 // Orbs heran, bevor auf den (viel kleineren) Kontakt-Radius geprüft wird. Behebt
@@ -308,6 +331,9 @@ public class Main extends ApplicationAdapter {
                 pickup.update(deltaTime, player.getCenter(), player.getStats().pickupRange);
                 if (pickup.isInRange(player.getCenter())) {
                     pickup.collect(player);
+                    if (pickup instanceof CurrencyPickup) {
+                        currencyCollected = true;
+                    }
                 }
             }
             for (Pickup pickup : pickups) {
@@ -316,6 +342,12 @@ public class Main extends ApplicationAdapter {
                 }
             }
             pickups.removeIf(Pickup::isCollected);
+
+            // Nach jeder Währungsänderung speichern (siehe GDD 3.2/Quest 9) - hier statt in
+            // CurrencyPickup selbst, damit MetaProgress-Persistenz zentral in Main bleibt
+            if (currencyCollected) {
+                metaProgress.save();
+            }
 
             int levelUps = player.getLevel() - levelBeforePickups;
             for (int i = 0; i < levelUps; i++) {
@@ -346,15 +378,14 @@ public class Main extends ApplicationAdapter {
             }
 
             // Terminal-Interaktion (siehe GDD 3.2/Quest 9) - anders als Door kein Auto-Trigger,
-            // sondern ein bewusster Tastendruck in Reichweite. Öffnet noch keinen echten Shop
-            // (kommt erst mit UpgradeShopUI in Quest 9.5/9.6) - hier vorerst nur ein Debug-Log
-            // zur Verifikation, dass Objekt-Parsing + Reichweiten-Check funktionieren.
+            // sondern ein bewusster Tastendruck in Reichweite, öffnet den Upgrade-Shop
             if (Gdx.input.isKeyJustPressed(GameSettings.interactKey)) {
                 for (Terminal terminal : room.getTerminals()) {
                     if (terminal.isPlayerInRange(player.getCenter())) {
                         if (DebugSettings.logInteraction) {
-                            System.out.println("Terminal aktiviert (Shop-UI kommt in Quest 9.5/9.6)");
+                            System.out.println("Terminal aktiviert");
                         }
+                        activeShop = new UpgradeShopUI(upgradePool, metaProgress);
                         break;
                     }
                 }
@@ -463,6 +494,20 @@ public class Main extends ApplicationAdapter {
             batch.setProjectionMatrix(uiCamera.combined);
             batch.begin();
             activeReward.renderText(batch, uiFont);
+            batch.end();
+        }
+
+        // Hub-Terminal-Shop (siehe GDD 3.2/Quest 9) - gleiches zweigeteiltes Render-Muster wie
+        // activeReward oben (Karten via ShapeRenderer, Text via SpriteBatch)
+        if (activeShop != null) {
+            shapeRenderer.setProjectionMatrix(uiCamera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            activeShop.renderCards(shapeRenderer);
+            shapeRenderer.end();
+
+            batch.setProjectionMatrix(uiCamera.combined);
+            batch.begin();
+            activeShop.renderText(batch, uiFont);
             batch.end();
         }
 
