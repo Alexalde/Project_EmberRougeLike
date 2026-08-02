@@ -471,11 +471,13 @@ public class Main extends ApplicationAdapter {
                 "HP: %.0f/%.0f\nSpeed: %.0f\nDash-CD: %.2f\n"
                     + "Level %d (%.0f/%.0f XP)\n"
                     + "Dmg x%.2f  AtkSpd x%.2f  CDR %.0f%%\n"
-                    + "Crit %.0f%% (x%.2f)  Proj +%d",
+                    + "Crit %.0f%% (x%.2f)  Proj +%d\n"
+                    + "Upgrade-Waehrung: %.0f  Unlock-Waehrung: %.0f",
                 player.getHealth(), player.getMaxHealth(), player.getSpeed(), Math.max(0f, player.getDashCooldownRemaining()),
                 player.getLevel(), player.getCurrentXp(), player.getXpToNextLevel(),
                 stats.damageMultiplier, stats.attackSpeedMultiplier, stats.cooldownReduction * 100,
-                stats.critChance * 100, stats.critDamageMultiplier, stats.projectileCount
+                stats.critChance * 100, stats.critDamageMultiplier, stats.projectileCount,
+                metaProgress.getCurrency(MetaCurrencyType.UPGRADE), metaProgress.getCurrency(MetaCurrencyType.UNLOCK)
             );
             uiFont.draw(batch, statsText, 8f, 112f);
         }
