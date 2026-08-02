@@ -77,7 +77,7 @@ Zusätzlich gewünscht: Ein neues `GameSettings`-Feld (passend zur bestehenden S
 
 Entscheidung 2026-07-21: Der Nutzer zeichnet deshalb bewusst NICHT jetzt schon eine generische Player-Attack-Animation (und im selben Zug auch nicht Hurt, da beide zum "wie sieht der Charakter im Kampf aus"-Gesamtbild gehören) - er möchte erst wissen, wie die finalen Waffen-Sprites aussehen, um sich den Charakter im Kontext vorstellen zu können, bevor er Zeit in eine möglicherweise wegwerfbare generische Version investiert. Player bleibt bis dahin bei Idle/Walk/Death als einzigen echten Animationen, Attack/Hurt nutzen weiterhin den eingefärbten Idle-South-Platzhalter (siehe `Player`-Konstruktor, `putStateAnimation()`).
 
-## ⬜ Sidequest 1: Feste Wände und ein Blick unter die Haube
+## ✅ Sidequest 1: Feste Wände und ein Blick unter die Haube
 Zwei Lücken, die beim Spieltest nach Quest 7 aufgefallen sind, unabhängig von Quest 8 angehbar (vermerkt 2026-07-21):
 
 - **Fertig wenn:** Spieler UND Gegner können nicht mehr durch Wände (`WallData`) oder Terrain-Lücken/Wasser (`TerrainData`) laufen; ein Debug-Overlay (`DebugSettings`-Flag) zeigt die wichtigsten Spieler-Stats (Health/MaxHealth, Speed, Dash-Cooldown) als Text im Spiel an.
@@ -122,6 +122,16 @@ Meta-Progression zwischen Runs: permanente Währung + Hub-Menü für dauerhafte 
 **Backlog (vermerkt während der Planung, bewusst NICHT Teil von Quest 9): Pause-Menü mit "Run aufgeben".** Einziger geplanter manueller Ausstieg aus einem laufenden Run (neben Tod) - soll sich exakt wie ein Tod verhalten (zurück in den Hub). Aktuell nicht umgesetzt, da kein Pause-Menü existiert.
 
 **Backlog (vermerkt während der Planung, bewusst NICHT Teil von Quest 9): Run-interne, nicht-persistente Dritt-Währung.** Idee für spätere In-Run-Shops (z.B. Gold, das mit dem Run endet) - eigenständiges späteres Thema, unabhängig von den beiden Meta-Währungen hier.
+
+## ✅ Sidequest 2: Debug-Werkzeuge
+Beim Testen der Quest-9-Persistenz (Käufe/Währung) wurde klar, dass die reine Lese-Anzeige aus Sidequest 1.4 nicht reicht, um Stände gefahrlos zu testen - man müsste sonst die `save.json` von Hand editieren. **Abgeschlossen 2026-08-02.**
+- **Fertig wenn:** Ein per Tastendruck ein-/ausblendbares Debug-Menü erlaubt es, alle in der Debug-Stat-Anzeige gezeigten Werte direkt im Spiel anzupassen, plus ein Weg, Terminal-Käufe und Währung gezielt zurückzusetzen.
+- **`DebugValue`** (neu) - EIN generischer Wrapper (Label, `Supplier<Float>`-Getter, `Consumer<Float>`-Setter, Schrittweite, Format-Pattern, bei Konstruktion gesnapshotteter Default für `reset()`) statt einer Unterklasse pro Wert - gleiches Prinzip wie `CurrencyPickup` (Quest 9): kein Verhaltensunterschied zwischen den Einträgen, nur welcher Wert gelesen/geschrieben wird. Int-Felder (`projectileCount`) laufen über eine konvertierende Lambda statt einer eigenen Int-Variante.
+- **`DebugMenuUI`** (neu) - anders als `RewardChoiceUI`/`UpgradeShopUI` eine VERTIKALE Liste statt nebeneinanderliegender Karten (zu viele Einträge für eine Reihe in 640px Breite). Pro Zeile ein `[-]`/`[+]`-Button (Hover-Highlight, Klick), dazu ein globaler "Alles zurücksetzen"-Button und ein "X"-Schließen-Button (zusätzlich zu Escape und der Toggle-Taste selbst).
+- **Öffnen/Schließen:** Neue `GameSettings.debugMenuToggleKey` (Default `F1`). Der Toggle-Check läuft UNCONDITIONAL ganz oben in `Main.render()` (wie der bestehende Fullscreen-Toggle) - funktioniert also auch während `activeReward`/`activeShop` offen sind. Das Debug-Menü ist der höchstpriorisierte Zweig der Pause-Gate-Kette, pausiert also alles Übrige.
+- **Neue Setter in `Player.java`** (vorher nur Getter): `setHealth`/`setMaxHealth`/`setSpeed`/`setDashCooldownRemaining`, jeweils sinnvoll geklemmt (z.B. `health` auf `[0, maxHealth]`, sonst würde `Healthbar`s Prozent-Berechnung über 100% hinauslaufen).
+- **Enthaltene Werte:** HP, Max-HP, Speed, Dash-Cooldown-Rest, alle relevanten `PlayerStats`-Multiplikatoren (Dmg/AtkSpd/CDR/Crit/CritDmg/ProjectileCount), beide Meta-Währungen. Level/XP sind bewusst NICHT enthalten - Level hängt über eine Formel von der aktuellen XP ab, direktes Setzen würde die XP-Schwelle inkonsistent machen (Entscheidung während der Planung).
+- **"Alles zurücksetzen"** setzt jeden Debug-Wert auf seinen Ausgangswert zurück UND macht Terminal-Käufe rückgängig (`purchasedUpgradeIds.clear()`, beide Währungen auf 0, `MetaProgress.save()`) - deckt genau den ursprünglichen Wunsch ab (Käufe testweise rückgängig machen, ohne `save.json` von Hand zu editieren).
 
 ## ⬜ Quest 10: Der erste Boss
 Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen.
