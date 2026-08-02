@@ -16,22 +16,26 @@ import java.util.List;
 // RewardChoiceUI KEINE Einmal-Auswahl aus 1-von-N: zeigt ALLE verfügbaren Upgrades gleichzeitig,
 // bleibt offen bis der Spieler sie schließt, erlaubt mehrere Käufe nacheinander. Maus+Tastatur
 // gleichberechtigt wie bei RewardChoiceUI (gleiches Prinzip: Hover schreibt denselben
-// selectedIndex wie Pfeiltasten-Navigation).
+// selectedIndex wie Pfeiltasten-Navigation) - schließen geht ebenfalls über beide Wege (Escape/
+// interactKey ODER Klick auf den "X"-Button oben rechts).
 public class UpgradeShopUI {
 
     private static final float CARD_WIDTH = 140f;
     private static final float CARD_HEIGHT = 160f;
     private static final float CARD_GAP = 16f;
     private static final float TEXT_PADDING = 10f;
+    private static final float CLOSE_BUTTON_SIZE = 24f;
 
     private final PermanentUpgradePool upgradePool;
     private final MetaProgress metaProgress;
     private final Rectangle[] cardBounds;
+    private final Rectangle closeButtonBounds;
     private int selectedIndex;
     // null, solange kein Kauf angefragt wurde - Main verarbeitet ihn (Guthaben abziehen,
     // anwenden, speichern) und liest ihn über consumePurchaseRequest() aus
     private PermanentUpgrade purchaseRequest;
     private boolean closeRequested;
+    private boolean closeButtonHovered;
 
     public UpgradeShopUI(PermanentUpgradePool upgradePool, MetaProgress metaProgress) {
         this.upgradePool = upgradePool;
@@ -48,10 +52,21 @@ public class UpgradeShopUI {
             float cardX = startX + i * (CARD_WIDTH + CARD_GAP);
             cardBounds[i] = new Rectangle(cardX, cardY, CARD_WIDTH, CARD_HEIGHT);
         }
+
+        // Oben rechts über der Karten-Reihe - Maus steuert den Shop ohnehin schon (Hover/Klick auf
+        // Karten), ein reiner Tastatur-Ausstieg (Escape/interactKey) wäre da inkonsequent
+        this.closeButtonBounds = new Rectangle(
+            startX + totalWidth - CLOSE_BUTTON_SIZE, cardY + CARD_HEIGHT + 8f, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE
+        );
     }
 
     // "uiMousePosition" ist bereits in uiCamera-Koordinaten umgerechnet (siehe Main.render())
     public void update(Vector2 uiMousePosition) {
+        closeButtonHovered = closeButtonBounds.contains(uiMousePosition);
+        if (closeButtonHovered && Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            closeRequested = true;
+        }
+
         for (int i = 0; i < cardBounds.length; i++) {
             if (cardBounds[i].contains(uiMousePosition)) {
                 selectedIndex = i;
@@ -122,6 +137,9 @@ public class UpgradeShopUI {
             shapeRenderer.setColor(color);
             shapeRenderer.rect(bounds.x, bounds.y, bounds.width, bounds.height);
         }
+
+        shapeRenderer.setColor(closeButtonHovered ? Color.GOLD : Color.GRAY);
+        shapeRenderer.rect(closeButtonBounds.x, closeButtonBounds.y, closeButtonBounds.width, closeButtonBounds.height);
     }
 
     // Erwartet ein bereits laufendes SpriteBatch.begin() (siehe Main.render())
@@ -138,5 +156,10 @@ public class UpgradeShopUI {
             float textY = bounds.y + bounds.height - TEXT_PADDING;
             font.draw(batch, text, bounds.x + TEXT_PADDING, textY, bounds.width - 2 * TEXT_PADDING, Align.center, true);
         }
+
+        font.draw(
+            batch, "X", closeButtonBounds.x, closeButtonBounds.y + closeButtonBounds.height - 4f,
+            closeButtonBounds.width, Align.center, false
+        );
     }
 }
