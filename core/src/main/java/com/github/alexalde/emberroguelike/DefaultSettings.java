@@ -28,4 +28,7 @@ public class DefaultSettings {
     // Für Terminal-Interaktion im Hub (siehe GDD 3.2/Quest 9) - anders als bei Door kein
     // Auto-Trigger, sondern ein bewusster Tastendruck in Reichweite
     public static final int INTERACT_KEY = Input.Keys.E;
+
+    // Öffnet/schließt das Debug-Menü (siehe DebugMenuUI) - bisher unbenutzte Taste
+    public static final int DEBUG_MENU_TOGGLE_KEY = Input.Keys.F1;
 }

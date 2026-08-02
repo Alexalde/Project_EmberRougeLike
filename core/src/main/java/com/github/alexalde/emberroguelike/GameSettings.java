@@ -24,6 +24,8 @@ public class GameSettings {
 
     public static int interactKey = DefaultSettings.INTERACT_KEY;
 
+    public static int debugMenuToggleKey = DefaultSettings.DEBUG_MENU_TOGGLE_KEY;
+
     public static void resetToDefaults() {
         moveUpKeyPrimary = DefaultSettings.MOVE_UP_KEY_PRIMARY;
         moveUpKeySecondary = DefaultSettings.MOVE_UP_KEY_SECONDARY;
@@ -46,5 +48,7 @@ public class GameSettings {
         restartKey = DefaultSettings.RESTART_KEY;
 
         interactKey = DefaultSettings.INTERACT_KEY;
+
+        debugMenuToggleKey = DefaultSettings.DEBUG_MENU_TOGGLE_KEY;
     }
 }
