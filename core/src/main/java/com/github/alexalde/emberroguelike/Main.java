@@ -62,6 +62,9 @@ public class Main extends ApplicationAdapter {
     // App-Start geladen (siehe create()), überlebt jeden Player-Neuaufbau in startGame(). Main
     // besitzt/speichert die Instanz, Player hält nur eine Referenz darauf.
     private MetaProgress metaProgress;
+    // Feste Liste aller kaufbaren permanenten Upgrades (siehe GDD 3.2/Quest 9) - Player braucht
+    // sie im Konstruktor, um gekaufte IDs in echte PermanentUpgrade-Objekte aufzulösen
+    private PermanentUpgradePool upgradePool;
 
     // Drop-Tuning für Meta-Währungen (siehe GDD 3.2/Quest 9) - erster grober Wurf, kein finales
     // Balancing. Upgrade-Währung: häufige, kleine Menge pro Gegner-Tod. Unlock-Währung: seltener,
@@ -92,6 +95,7 @@ public class Main extends ApplicationAdapter {
         itemPool = new ItemPool();
         pendingRewardBatches = new LinkedList<>();
         metaProgress = MetaProgress.load();
+        upgradePool = new PermanentUpgradePool();
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -113,7 +117,7 @@ public class Main extends ApplicationAdapter {
         if (player != null) {
             player.dispose();
         }
-        player = new Player(metaProgress);
+        player = new Player(metaProgress, upgradePool);
 
         Room hub = new Room("maps/hub.tmx");
         enterRoom(hub, hub.getPlayerSpawn());

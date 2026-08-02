@@ -99,14 +99,14 @@ public class Player {
 
     // Persistenter, Run-übergreifender Charakterbogen (siehe GDD 3.2/Quest 9) - Player hält nur
     // eine REFERENZ (Main besitzt/lädt/speichert die eigentliche Instanz), damit sie einen
-    // Player-Neuaufbau in startGame() übersteht. Noch nicht genutzt (siehe Quest 9.4 für die
-    // eigentliche Anwendung gekaufter Upgrades).
+    // Player-Neuaufbau in startGame() übersteht.
     private MetaProgress metaProgress;
 
     // Startet ohne feste Position - der Aufrufer (Main) setzt sie direkt danach über
     // setCenter() auf den jeweiligen Raum-Spawnpunkt (siehe Room.getPlayerSpawn()/
-    // Door.getEntryPosition(), Quest 9)
-    public Player(MetaProgress metaProgress) {
+    // Door.getEntryPosition(), Quest 9). "upgradePool" wird nur HIER im Konstruktor gebraucht,
+    // um gekaufte Upgrade-IDs in echte PermanentUpgrade-Objekte aufzulösen - deshalb kein Feld.
+    public Player(MetaProgress metaProgress, PermanentUpgradePool upgradePool) {
         this.position = new Vector2(0, 0);
         this.direction = new Vector2(0, 0);
         this.speed = 300f;
@@ -150,7 +150,21 @@ public class Player {
         this.bow = new Bow();
         this.aimDirection = new Vector2(1, 0);
         this.maxHealth = 100f;
+        applyPermanentUpgrades(upgradePool);
         this.health = maxHealth;
+    }
+
+    // Wendet alle im persistenten Charakterbogen vermerkten Upgrades an (siehe GDD 3.2/Quest 9) -
+    // macht den Kauf wirklich "permanent", obwohl Player/PlayerStats bei jedem neuen Run frisch
+    // erstellt werden. Läuft VOR "health = maxHealth", damit ein gekauftes Max-HP-Upgrade sich
+    // sofort in vollen, nicht nur maximalen HP niederschlägt.
+    private void applyPermanentUpgrades(PermanentUpgradePool upgradePool) {
+        for (String upgradeId : metaProgress.purchasedUpgradeIds) {
+            PermanentUpgrade upgrade = upgradePool.findById(upgradeId);
+            if (upgrade != null) {
+                upgrade.apply(this);
+            }
+        }
     }
 
     // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject).
@@ -313,6 +327,13 @@ public class Player {
 
     public float getMaxHealth() {
         return maxHealth;
+    }
+
+    // Für PermanentUpgrade (siehe GDD 3.2/Quest 9, z.B. MaxHealthUpgrade) - erhöht NUR maxHealth,
+    // nicht health direkt (wird aktuell ausschließlich im Konstruktor VOR "health = maxHealth"
+    // aufgerufen, siehe applyPermanentUpgrades())
+    public void increaseMaxHealth(float amount) {
+        this.maxHealth += amount;
     }
 
     // Für die Debug-Stat-Anzeige (Sidequest 1.4)
