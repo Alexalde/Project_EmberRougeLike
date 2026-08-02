@@ -136,11 +136,16 @@ Beim Testen der Quest-9-Persistenz (Käufe/Währung) wurde klar, dass die reine 
 ## ⬜ Quest 10: Der erste Boss
 Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen.
 - Fertig wenn: Boss besiegbar, hat mind. 2 unterscheidbare Angriffsmuster.
+- **Vorentscheidungen (vermerkt 2026-08-02, Ausblick-Gespräch nach Quest 9, noch nicht umgesetzt):**
+  - Boss wird eine **neue, eigenständige Klasse** statt einer Erweiterung/Vererbung der bestehenden `Enemy`-Klasse - mehr Freiheit für Phasen-Logik, kein Risiko dass `Enemy` durch Boss-Spezialfälle unübersichtlich wird.
+  - "Mind. 2 unterscheidbare Angriffsmuster" heißt **beides kombiniert**: mehrere gleichzeitig verfügbare Muster UND ein Wechsel des verfügbaren Musters bei HP-Schwellen (klassischer Phasen-Rhythmus plus situative Variation innerhalb einer Phase).
+  - Boss bekommt **erst einen Platzhalter**, keine eigene Kunst von Anfang an (gleiches Vertical-Slice-Prinzip wie bisher bei Waffen/Türen) - Movesets/Balancing sollen zuerst stehen.
 
 ## ⬜ Quest 11: Das Chaos ordnet sich (Prozedurale Generierung)
 Erste Version der prozeduralen Raumkombination, aufbauend auf dem Pool handgebauter Räume aus Quest 4–6 (Ansatz wird dann final entschieden, siehe GDD 4).
 - Fertig wenn: Ein Run besteht aus zufällig zusammengesetzten Räumen aus dem bestehenden Raum-Pool.
 - Technischer Vorlauf (vermerkt 2026-07-13): Quest 6s `Door.targetRoom`/`targetDoorName` sind fest verdrahtete Verknüpfungen, passend für handgebaute, feste Level — aber NICHT direkt geeignet für einen austauschbaren Raum-Pool (der Generator soll ja zur Laufzeit einen beliebigen kompatiblen Raum wählen, nicht einen fest vorgegebenen). Die Tür-Namenskonvention (Himmelsrichtungen, `"north"`/`"south"`/...) bleibt aber relevant und wird bewusst schon jetzt konsequent genutzt — vermutlich reicht die Richtung allein als Kompatibilitäts-Kriterium für den Pool-Mechanismus, `targetRoom`/`targetDoorName` bleiben parallel für fest verankerte Räume (z.B. Startraum) bestehen. Endgültiger Ansatz erst hier entscheiden, nicht vorher raten (siehe Weapon-Interface-Präzedenzfall).
+- **Vorentscheidung (vermerkt 2026-08-02):** Der aktuelle Raum-Pool (`testmap.tmx`, `test01_east.tmx`, `test01_west.tmx`, `testfinal.tmx`) reicht laut Nutzer nicht für einen sinnvollen ersten Test - vorher sollen mehr Räume gebaut werden. Das setzt aber voraus, dass Türen überhaupt erreichbar sind (siehe die unten stehende, aus Sidequest 1 zurückgestellte Tür-Kollisions-Lücke) - **Reihenfolge vor Quest 11:** (1) Zwischenlösung für Tür-Erreichbarkeit (größerer Interaktions-Radius statt des vollen, noch ausstehenden Tür-Art-Passes, eventuell mit einer ersten einfachen Visualisierung), (2) mehr Dungeon-Räume bauen, (3) erst dann Quest 11 selbst angehen.
 
 ---
 Diese Liste ist ein lebendes Dokument — Reihenfolge/Inhalt kann sich anpassen, sobald wir tiefer in einzelne Quests einsteigen.
