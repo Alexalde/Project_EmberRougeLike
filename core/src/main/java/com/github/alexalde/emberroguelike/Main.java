@@ -16,9 +16,11 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
@@ -42,6 +44,14 @@ public class Main extends ApplicationAdapter {
     private Player player; // Hier ist unser Spieler-Objekt!
     private List<Enemy> enemies;
     private boolean gameOver;
+
+    // Pfade bereits geleerter Räume für den AKTUELLEN Run (siehe enterRoom()) - verhindert, dass
+    // Gegner beim erneuten Betreten (Backtracking durch den Raum-Graphen) wieder auftauchen. Wird
+    // in startGame() geleert, gilt also nur innerhalb eines Runs, nicht über Runs hinweg. Bewusst
+    // pfad-basiert (ein Pfad = ein physischer Raum in Quest 4-6s festem Raum-Graphen) statt über
+    // Instanz-IDs - Letzteres würde erfordern zu raten, wie Quest 11s noch nicht entschiedene
+    // prozedurale Generierung Raum-Vorlagen wiederverwendet (siehe ROADMAP Quest 11).
+    private Set<String> clearedRoomPaths;
 
     // Boden-Drops, die erst eingesammelt werden müssen (siehe Pickup, Nutzer-Entscheidung Quest 8:
     // XP kommt nicht mehr sofort beim Gegner-Tod, sondern als aufsammelbarer Orb)
@@ -104,6 +114,7 @@ public class Main extends ApplicationAdapter {
         pendingRewardBatches = new LinkedList<>();
         metaProgress = MetaProgress.load();
         upgradePool = new PermanentUpgradePool();
+        clearedRoomPaths = new HashSet<>();
 
         updateViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
@@ -127,6 +138,9 @@ public class Main extends ApplicationAdapter {
             player.dispose();
         }
         player = new Player(metaProgress, upgradePool);
+        // Neuer Run-Zyklus - vorheriger Dungeon-Fortschritt (siehe enterRoom()) ist nicht mehr
+        // relevant, Räume sollen beim nächsten Run wieder ihre Gegner haben
+        clearedRoomPaths.clear();
 
         Room hub = new Room("maps/hub.tmx");
         enterRoom(hub, hub.getPlayerSpawn());
@@ -175,9 +189,13 @@ public class Main extends ApplicationAdapter {
         room = newRoom;
         player.setCenter(spawnCenter);
 
+        // Bereits geleerte Räume (siehe clearedRoomPaths) spawnen beim erneuten Betreten (z.B.
+        // Backtracking im Raum-Graphen) keine Gegner mehr neu
         enemies = new ArrayList<>();
-        for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
-            enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
+        if (!clearedRoomPaths.contains(room.getTmxPath())) {
+            for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
+                enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
+            }
         }
         pickups = new ArrayList<>();
 
@@ -476,6 +494,7 @@ public class Main extends ApplicationAdapter {
             // ROADMAP) statt eines Auto-Triggers.
             if (roomHadEnemies && enemies.isEmpty() && !roomRewardGranted) {
                 roomRewardGranted = true;
+                clearedRoomPaths.add(room.getTmxPath());
                 pendingRewardBatches.add(itemPool.pickRandom(3));
                 // Zusätzlich seltene Unlock-Währung, an den Meilenstein "Raum geschafft"
                 // gekoppelt (siehe GDD 3.1 "Freischaltungen über Meilensteine") - dropt an der
