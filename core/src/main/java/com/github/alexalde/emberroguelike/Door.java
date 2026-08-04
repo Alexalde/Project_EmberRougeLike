@@ -17,7 +17,11 @@ public class Door {
     private String targetRoom;
     private String targetDoorName;
 
-    private static final float INTERACTION_RADIUS = 20f;
+    // Zwischenlösung (siehe ROADMAP Quest 11-Vorlauf, 2026-08-02): Türen liegen in der
+    // Wand-Kachelreihe (1 Tile = 32px dick), seit der Wand-Kollision aus Sidequest 1 kommt der
+    // Spieler nicht mehr nah genug heran, um den alten Radius zu erreichen. Bewusst grob erhöht
+    // statt die Tür neu zu positionieren - endgültige Lösung kommt mit dem Tür-Art-Pass.
+    private static final float INTERACTION_RADIUS = 48f;
     private static final float ENTRY_OFFSET_DISTANCE = 32f;
 
     public Door(Vector2 position, String name, String targetRoom, String targetDoorName) {
