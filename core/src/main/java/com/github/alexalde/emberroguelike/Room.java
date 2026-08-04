@@ -17,6 +17,10 @@ import java.util.List;
 
 public class Room {
 
+    // Eigener Pfad, mit dem dieser Raum geladen wurde - dient Main als stabiler Schlüssel für
+    // clearedRoomPaths (siehe enterRoom()), um zu erkennen, ob dieser physische Raum in diesem
+    // Run bereits geleert wurde
+    private String tmxPath;
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
     private List<Vector2> enemySpawnPoints;
@@ -46,6 +50,7 @@ public class Room {
     private DualGridRenderer wallRenderer;
 
     public Room(String tmxPath) {
+        this.tmxPath = tmxPath;
         this.map = new TmxMapLoader().load(tmxPath);
         this.renderer = new OrthogonalTiledMapRenderer(map);
         this.enemySpawnPoints = new ArrayList<>();
@@ -100,6 +105,10 @@ public class Room {
                 runEntrances.add(new RunEntrance(new Vector2(x, y)));
             }
         }
+    }
+
+    public String getTmxPath() {
+        return tmxPath;
     }
 
     public List<Vector2> getEnemySpawnPoints() {
