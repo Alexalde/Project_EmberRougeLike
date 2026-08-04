@@ -39,13 +39,13 @@ public class Projectile {
         this.texture = texture;
     }
 
-    public void update(float deltaTime, List<Enemy> targets) {
+    public void update(float deltaTime, List<Damageable> targets) {
         float step = speed * deltaTime;
         position.x += direction.x * step;
         position.y += direction.y * step;
         distanceTraveled += step;
 
-        for (Enemy target : targets) {
+        for (Damageable target : targets) {
             if (hitsRemaining <= 0) {
                 break;
             }

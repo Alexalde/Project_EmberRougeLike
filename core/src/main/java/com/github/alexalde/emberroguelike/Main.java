@@ -386,7 +386,10 @@ public class Main extends ApplicationAdapter {
                 activeShop = null;
             }
         } else if (!gameOver) {
-            player.update(deltaTime, enemies, mouseWorldPosition, room);
+            // Player.update() braucht List<Damageable> (siehe Quest 10) statt List<Enemy> direkt -
+            // Java-Generics sind invariant, eine List<Enemy> lässt sich nicht direkt übergeben.
+            // Enthält vorerst nur "enemies" - ein Boss (Quest 10.3+) wird hier bei Bedarf ergänzt.
+            player.update(deltaTime, new ArrayList<Damageable>(enemies), mouseWorldPosition, room);
 
             for (Enemy enemy : enemies) {
                 enemy.update(deltaTime, player, room);

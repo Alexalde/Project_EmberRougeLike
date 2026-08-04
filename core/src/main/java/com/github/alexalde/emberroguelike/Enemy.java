@@ -13,7 +13,9 @@ import com.badlogic.gdx.math.Vector2;
 
 import java.util.EnumMap;
 
-public class Enemy {
+// Implementiert Damageable (siehe Quest 10) - macht Enemy für Sword/Bow/Projectile hittable, ohne
+// dass diese wissen müssen, ob sie gegen einen normalen Gegner oder einen Boss kämpfen
+public class Enemy implements Damageable {
 
     private Vector2 position;
 

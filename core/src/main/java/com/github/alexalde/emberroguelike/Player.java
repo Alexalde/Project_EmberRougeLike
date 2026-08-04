@@ -170,7 +170,7 @@ public class Player {
     // "mouseWorldPosition" kommt bereits fertig umgerechnet von Main (Viewport-aware unproject).
     // "room" liefert sowohl die Raum-Maße als auch die Terrain-Kollisionsabfrage (siehe
     // Sidequest 1) - ersetzt die vorherigen einzelnen roomWidth/roomHeight-Parameter
-    public void update(float deltaTime, List<Enemy> targets, Vector2 mouseWorldPosition, Room room) {
+    public void update(float deltaTime, List<Damageable> targets, Vector2 mouseWorldPosition, Room room) {
         sword.update(deltaTime, targets, stats);
         bow.update(deltaTime, targets, stats);
 
