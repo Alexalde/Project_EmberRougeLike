@@ -34,7 +34,7 @@ public class Sword implements Weapon {
 
     // "targets" wird hier nicht gebraucht - Signatur folgt dem Weapon-Interface, das Bow braucht sie
     @Override
-    public void update(float deltaTime, List<Enemy> targets, PlayerStats stats) {
+    public void update(float deltaTime, List<Damageable> targets, PlayerStats stats) {
         // Cooldown läuft ab - skaliert mit attackSpeedMultiplier (siehe GDD 2.1), 1 = unverändert
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime * stats.attackSpeedMultiplier;
@@ -46,13 +46,13 @@ public class Sword implements Weapon {
         }
     }
 
-    private void attack(Vector2 origin, Vector2 direction, List<Enemy> targets, PlayerStats stats) {
+    private void attack(Vector2 origin, Vector2 direction, List<Damageable> targets, PlayerStats stats) {
         lastAttackDirection = direction.cpy();
         attackVisualTimeRemaining = attackVisualDuration;
 
         // Ein Kegel-Schwung trifft ALLE Gegner darin gleichzeitig, nicht nur einen - jeder
         // getroffene Gegner bekommt einen EIGENEN Crit-Roll (siehe PlayerStats.computeDamage())
-        for (Enemy target : targets) {
+        for (Damageable target : targets) {
             if (target.isAlive() && target.isHitByArc(origin, direction, range, halfConeAngleDegrees)) {
                 target.takeDamage(stats.computeDamage(damage, DamageType.PHYSICAL));
             }
@@ -60,7 +60,7 @@ public class Sword implements Weapon {
     }
 
     @Override
-    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets, PlayerStats stats) {
+    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Damageable> targets, PlayerStats stats) {
         if (attackCooldownRemaining <= 0){
             attackCooldownRemaining = attackCooldownDuration;
             attack(origin, direction, targets, stats);

@@ -8,8 +8,8 @@ public interface Weapon {
     // "stats" (siehe GDD 2.1/Quest 8) - Waffen verrechnen ihren Basisschaden selbst darüber
     // (statt eine Rückreferenz auf Player zu halten), skaliert auch den Cooldown-Abbau über
     // attackSpeedMultiplier
-    void update(float deltaTime, List<Enemy> targets, PlayerStats stats);
-    boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets, PlayerStats stats);
+    void update(float deltaTime, List<Damageable> targets, PlayerStats stats);
+    boolean tryAttack(Vector2 origin, Vector2 direction, List<Damageable> targets, PlayerStats stats);
 
     // Für die Angriffs-Animation des Trägers (siehe Player.determineAnimationState()) - true,
     // solange der Angriff visuell noch "läuft", unabhängig vom Cooldown

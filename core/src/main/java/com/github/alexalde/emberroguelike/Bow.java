@@ -47,7 +47,7 @@ public class Bow implements Weapon {
     }
 
     @Override
-    public void update(float deltaTime, List<Enemy> targets, PlayerStats stats) {
+    public void update(float deltaTime, List<Damageable> targets, PlayerStats stats) {
         // Cooldown-Abbau skaliert mit attackSpeedMultiplier (siehe GDD 2.1), 1 = unverändert
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime * stats.attackSpeedMultiplier;
@@ -104,7 +104,7 @@ public class Bow implements Weapon {
 
     // "targets" wird hier (noch) nicht direkt benutzt, gehört aber zur Signatur des Weapon-Interfaces
     @Override
-    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Enemy> targets, PlayerStats stats) {
+    public boolean tryAttack(Vector2 origin, Vector2 direction, List<Damageable> targets, PlayerStats stats) {
         if (attackCooldownRemaining <= 0) {
             attackCooldownRemaining = attackCooldownDuration;
             fire(origin, direction, stats);
