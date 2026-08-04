@@ -22,7 +22,12 @@ public class Door {
     // Spieler nicht mehr nah genug heran, um den alten Radius zu erreichen. Bewusst grob erhöht
     // statt die Tür neu zu positionieren - endgültige Lösung kommt mit dem Tür-Art-Pass.
     private static final float INTERACTION_RADIUS = 48f;
-    private static final float ENTRY_OFFSET_DISTANCE = 32f;
+    // Muss größer als INTERACTION_RADIUS bleiben (gefunden 2026-08-02): sonst landet der Spieler
+    // beim Betreten eines Raums bereits innerhalb der Trigger-Reichweite DERSELBEN Tür, durch die
+    // er gerade gekommen ist. In Räumen ohne eigene Gegner (z.B. test01_west/east.tmx) gibt es
+    // keine "Gegner noch am Leben"-Sperre, die das kurzzeitig verhindert - der Spieler wurde
+    // dadurch sofort wieder zurückgeschickt (wirkte wie ein Endlos-Zurücksetzen desselben Raums).
+    private static final float ENTRY_OFFSET_DISTANCE = 64f;
 
     public Door(Vector2 position, String name, String targetRoom, String targetDoorName) {
         this.position = position;
