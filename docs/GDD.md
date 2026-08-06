@@ -103,5 +103,6 @@ Explizit **nicht** Teil des frühen Scopes/MVP:
 - **Nur 1 Waffenslot**, kein Echtzeit-Wechselsystem zwischen mehreren Waffen (siehe Abschnitt 2).
 - **Wenige Gegner- und Raumtypen im MVP** — Vielfalt hier ist explizit für spätere Phasen geplant, nicht für den MVP.
 - **Boss-Fights sind Pflicht, aber spätere Phase**, nicht Teil des MVP.
+  - **Umgesetzt (Quest 10, 2026-08-06):** Erster Boss - eigene `Boss`-Klasse (keine `Enemy`-Vererbung), Angriffsmuster als wiederverwendbare `BossAttack`-Bibliothek (Bullet-Hell-Stil, Touhou/Calamity-Infernum als Referenz): Nahkampf-Schlag und telegraphierter AOE-Slam (Phase-2-Eskalation), zwei Beam-Varianten (spieler-gezielt und raumgeometrie-gebunden), drei Projektil-Konfigurationen (Einzelschuss, Fächer, Radial-Burst) über eine gemeinsame parametrisierte Klasse. Bewusst noch reiner `ShapeRenderer`-Platzhalter, kein echter Art-Pass (siehe ROADMAP Quest 10 für alle technischen Details und offene Backlog-Punkte).
 - **Kein Android-/Web-Port.** Nur Desktop (Windows/Linux/macOS via lwjgl3).
 - **Sound/Musik ohne frühen Feinschliff.** Im Scope, aber kein früher Fokus.
