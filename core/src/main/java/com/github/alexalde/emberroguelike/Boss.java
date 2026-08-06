@@ -70,6 +70,21 @@ public class Boss implements Damageable {
     private float meleeDamage;
     private float meleeCooldownDuration;
 
+    // Muster 2 (nur ab PHASE_TWO, siehe GDD 6/Quest 10) - GRÖSSERE Auslöse-Reichweite als der
+    // Nahkampf-Schlag: der Boss kann diesen Angriff schon aus größerem Abstand starten, das
+    // macht Phase 2 spürbar anders, nicht nur eine Farbänderung. telegraphOrigin friert die
+    // Position beim Windup-Start ein (nicht bei Auflösung neu gelesen) - der Boss bewegt sich
+    // während des Windups ohnehin nicht, hält die Regel aber unmissverständlich.
+    private float telegraphTriggerRange;
+    private float telegraphDuration;
+    private float telegraphTimeRemaining;
+    private Vector2 telegraphOrigin;
+    private float telegraphedSlamRadius;
+    private float telegraphedSlamDamage;
+    private float telegraphedSlamCooldownDuration;
+    // Chance pro Auslösegelegenheit in PHASE_TWO, Muster 2 statt Muster 1 zu wählen
+    private float patternTwoChanceInPhaseTwo;
+
     public Boss(float startX, float startY) {
         this.position = new Vector2(startX, startY);
         this.maxHealth = 300f;
@@ -85,6 +100,13 @@ public class Boss implements Damageable {
         this.meleeWindupDuration = 0.4f;
         this.meleeDamage = 15f;
         this.meleeCooldownDuration = 1.5f;
+
+        this.telegraphTriggerRange = 100f;
+        this.telegraphDuration = 0.9f;
+        this.telegraphedSlamRadius = 80f;
+        this.telegraphedSlamDamage = 25f;
+        this.telegraphedSlamCooldownDuration = 2.5f;
+        this.patternTwoChanceInPhaseTwo = 0.5f;
     }
 
     public void update(float deltaTime, Player player, Room room) {
@@ -112,8 +134,19 @@ public class Boss implements Damageable {
         float distance = myCenter.dst(playerCenter);
 
         switch (state) {
-            case CHASING:
-                if (attackCooldownRemaining <= 0 && distance <= meleeAttackRange) {
+            case CHASING: {
+                boolean canAttack = attackCooldownRemaining <= 0;
+                // Nur in PHASE_TWO überhaupt möglich, UND nur wenn der Zufalls-Roll dafür fällt -
+                // sonst bleibt es beim vertrauten Nahkampf-Schlag (siehe triggerMelee unten)
+                boolean triggerTelegraph = canAttack && phase == BossPhase.PHASE_TWO
+                    && distance <= telegraphTriggerRange && MathUtils.random() < patternTwoChanceInPhaseTwo;
+                boolean triggerMelee = canAttack && !triggerTelegraph && distance <= meleeAttackRange;
+
+                if (triggerTelegraph) {
+                    state = BossState.TELEGRAPHING;
+                    telegraphTimeRemaining = telegraphDuration;
+                    telegraphOrigin = myCenter.cpy();
+                } else if (triggerMelee) {
                     state = BossState.MELEE_ATTACKING;
                     meleeWindupRemaining = meleeWindupDuration;
                 } else {
@@ -124,9 +157,10 @@ public class Boss implements Damageable {
                     moveWithCollision(direction.x * moveSpeed * deltaTime, direction.y * moveSpeed * deltaTime, room);
                 }
                 break;
+            }
             case MELEE_ATTACKING:
                 // Bewusst bewegungslos während der Vorwarnzeit (siehe GDD 6/Quest 10) - konsistente,
-                // leicht nachvollziehbare Regel, gilt später genauso für Muster 2 (Quest 10.5)
+                // leicht nachvollziehbare Regel, gilt genauso für Muster 2 (siehe TELEGRAPHING unten)
                 meleeWindupRemaining -= deltaTime;
                 if (meleeWindupRemaining <= 0) {
                     if (myCenter.dst(player.getCenter()) <= meleeAttackRange) {
@@ -140,7 +174,20 @@ public class Boss implements Damageable {
                 }
                 break;
             case TELEGRAPHING:
-                // Kommt in Quest 10.5 (Muster 2) - noch kein Zustand, der aktuell erreicht wird
+                telegraphTimeRemaining -= deltaTime;
+                if (telegraphTimeRemaining <= 0) {
+                    // Gegen den EINGEFRORENEN telegraphOrigin geprüft, nicht die aktuelle
+                    // Boss-Position (auch wenn er sich während des Windups ohnehin nicht bewegt) -
+                    // macht die "an dieser Stelle ausweichen"-Regel unmissverständlich
+                    if (telegraphOrigin.dst(player.getCenter()) <= telegraphedSlamRadius) {
+                        if (DebugSettings.logDamage) {
+                            System.out.println("Boss trifft mit AOE-Slam!");
+                        }
+                        player.takeDamage(telegraphedSlamDamage);
+                    }
+                    attackCooldownRemaining = telegraphedSlamCooldownDuration;
+                    state = BossState.CHASING;
+                }
                 break;
         }
     }
@@ -230,11 +277,16 @@ public class Boss implements Damageable {
         // - während des Windups WÄCHST ein Warnkreis von 0 auf die tatsächliche Trefferreichweite
         // und färbt sich dabei gelb->rot, zeigt also gleichzeitig Timing UND Trefferzone
         // ("Hurtbox des Angriffs"). VOR dem Körper gezeichnet, damit der Körper obenauf bleibt.
-        // Gleiche Technik wird Muster 2 (Quest 10.5) wiederverwenden.
+        // Dieselbe Technik für beide Angriffsmuster - gemeinsame visuelle Sprache.
         if (state == BossState.MELEE_ATTACKING) {
             float progress = 1f - (meleeWindupRemaining / meleeWindupDuration);
             shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
             shapeRenderer.circle(center.x, center.y, meleeAttackRange * progress);
+        } else if (state == BossState.TELEGRAPHING) {
+            // Um den EINGEFRORENEN telegraphOrigin statt der aktuellen Boss-Position (siehe update())
+            float progress = 1f - (telegraphTimeRemaining / telegraphDuration);
+            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
+            shapeRenderer.circle(telegraphOrigin.x, telegraphOrigin.y, telegraphedSlamRadius * progress);
         }
 
         if (hurtTimeRemaining > 0) {
