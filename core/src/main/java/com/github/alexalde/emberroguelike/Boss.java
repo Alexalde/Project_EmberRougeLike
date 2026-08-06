@@ -225,6 +225,18 @@ public class Boss implements Damageable {
     // bereits laufendes ShapeRenderer.begin(ShapeType.Filled) (siehe Main.render())
     public void draw(ShapeRenderer shapeRenderer) {
         Vector2 center = getCenter();
+
+        // Angriffs-Vorwarnung (Nutzer-Feedback: reines Stehenbleiben war nicht klar genug lesbar)
+        // - während des Windups WÄCHST ein Warnkreis von 0 auf die tatsächliche Trefferreichweite
+        // und färbt sich dabei gelb->rot, zeigt also gleichzeitig Timing UND Trefferzone
+        // ("Hurtbox des Angriffs"). VOR dem Körper gezeichnet, damit der Körper obenauf bleibt.
+        // Gleiche Technik wird Muster 2 (Quest 10.5) wiederverwenden.
+        if (state == BossState.MELEE_ATTACKING) {
+            float progress = 1f - (meleeWindupRemaining / meleeWindupDuration);
+            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
+            shapeRenderer.circle(center.x, center.y, meleeAttackRange * progress);
+        }
+
         if (hurtTimeRemaining > 0) {
             shapeRenderer.setColor(Color.WHITE);
         } else {
