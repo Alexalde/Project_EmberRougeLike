@@ -23,6 +23,20 @@ public class BossAttackPool {
         allAttacks.add(new PlayerLockedBeamAttack(150f, 0.7f, 1.2f, 300f, 16f, 8f, 0.3f, 3f));
         allAttacks.add(new RoomLockedBeamAttack(true, 1f, 0.8f, 32f, 10f, 0.3f, 3.5f));
         allAttacks.add(new RoomLockedBeamAttack(false, 1f, 0.8f, 32f, 10f, 0.3f, 3.5f));
+
+        // Projektil-Muster (siehe GDD 6/Quest 10, Quest 10.11) - EINE parametrisierte Klasse,
+        // drei Konfigurationen. Gezielter Einzelschuss bewusst schon in PHASE_ONE verfügbar
+        // (einfache Fernkampf-Variante von Anfang an), Fächer/Radial-Burst erst ab PHASE_TWO -
+        // gleiches "Phase 2 wird spürbar voller"-Prinzip wie bei den Beams.
+        allAttacks.add(new ProjectileBurstAttack(
+            "Gezielter Schuss", 1, 0f, true, 180f, 10f, 350f, 6f, 0.5f, 250f, false, 1.8f
+        ));
+        allAttacks.add(new ProjectileBurstAttack(
+            "Projektil-Fächer", 5, 60f, true, 160f, 8f, 300f, 6f, 0.6f, 250f, true, 2.5f
+        ));
+        allAttacks.add(new ProjectileBurstAttack(
+            "Radial-Burst", 12, 360f, false, 140f, 8f, 280f, 6f, 0.7f, 500f, true, 3f
+        ));
     }
 
     // Gleichverteilt zufällige Wahl unter allen aktuell auslösbaren Mustern, null wenn keins
