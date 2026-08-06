@@ -18,6 +18,11 @@ public class BossAttackPool {
         allAttacks = new ArrayList<>();
         allAttacks.add(new MeleeSlamAttack(48f, 0.4f, 15f, 1.5f));
         allAttacks.add(new TelegraphedAoeAttack(100f, 0.9f, 80f, 25f, 2.5f));
+
+        // Beam-Muster (siehe GDD 6/Quest 10, Quest 10.10) - beide nur ab PHASE_TWO
+        allAttacks.add(new PlayerLockedBeamAttack(150f, 0.7f, 1.2f, 300f, 16f, 8f, 0.3f, 3f));
+        allAttacks.add(new RoomLockedBeamAttack(true, 1f, 0.8f, 32f, 10f, 0.3f, 3.5f));
+        allAttacks.add(new RoomLockedBeamAttack(false, 1f, 0.8f, 32f, 10f, 0.3f, 3.5f));
     }
 
     // Gleichverteilt zufällige Wahl unter allen aktuell auslösbaren Mustern, null wenn keins
