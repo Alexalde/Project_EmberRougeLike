@@ -37,6 +37,9 @@ public class Room {
     // switchRoom() - kein Türnamen-Nachschlagen nötig, da der Run-Startraum einen festen
     // playerSpawn hat. Aktuell nur im Hub vorhanden.
     private List<RunEntrance> runEntrances;
+    // Fester Boss-Spawnpunkt (siehe GDD 6/Quest 10), gleiches Prinzip wie playerSpawn - null,
+    // wenn dieser Raum keinen Boss hat (die meisten Räume)
+    private Vector2 bossSpawn;
     private int pixelWidth;
     private int pixelHeight;
 
@@ -103,6 +106,8 @@ public class Room {
                 playerSpawn = new Vector2(x, y);
             } else if ("RunEntrance".equals(type)) {
                 runEntrances.add(new RunEntrance(new Vector2(x, y)));
+            } else if ("BossSpawn".equals(type)) {
+                bossSpawn = new Vector2(x, y);
             }
         }
     }
@@ -130,6 +135,11 @@ public class Room {
 
     public List<RunEntrance> getRunEntrances() {
         return runEntrances;
+    }
+
+    // null, wenn dieser Raum keinen Boss hat (siehe bossSpawn oben)
+    public Vector2 getBossSpawn() {
+        return bossSpawn;
     }
 
     public Door getDoorByName(String doorName) {
