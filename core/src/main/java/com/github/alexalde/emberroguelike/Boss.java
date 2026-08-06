@@ -11,6 +11,10 @@ import com.badlogic.gdx.math.Vector2;
 // überladen). Implementiert stattdessen Damageable, damit Sword/Bow/Projectile ihn treffen können,
 // ohne von Enemy zu wissen (siehe Damageable.java).
 //
+// Angriffsmuster leben seit Quest 10.9 als eigene BossAttack-Implementierungen (siehe
+// BossAttackPool) statt Boss-interner Zustandslogik - Boss orchestriert nur noch, welches Muster
+// gerade läuft ("activeAttack", null = CHASING).
+//
 // Terrain-Kollision (moveWithCollision/collidesWithRoom) ist eine bewusste KOPIE von Enemys
 // privater Logik, keine gemeinsame Extraktion - die "eigene Klasse"-Entscheidung steht schon fest,
 // eine Extraktion nur für diesen einen Punkt würde Enemys funktionierenden Code unnötig anfassen.
@@ -42,48 +46,18 @@ public class Boss implements Damageable {
 
     // Phasenwechsel bei HP-Schwelle (siehe GDD 6/Quest 10) - einmaliger, einseitiger Wechsel
     // (Boss heilt hier nicht, keine Rückwärts-Transition nötig). Grober erster Wert, kein
-    // finales Balancing.
-    private enum BossPhase {
-        PHASE_ONE,
-        PHASE_TWO
-    }
-
+    // finales Balancing. BossPhase ist ein Top-Level-Enum (siehe BossPhase.java), damit
+    // BossAttack-Implementierungen außerhalb dieser Klasse darauf zugreifen können.
     private BossPhase phase;
     private static final float PHASE_TWO_HP_THRESHOLD = 0.5f;
 
-    // TELEGRAPHING wird erst in Quest 10.5 (Muster 2) genutzt - bereits jetzt mit angelegt,
-    // damit der Enum-Typ danach nicht nochmal angefasst werden muss
-    private enum BossState {
-        CHASING,
-        MELEE_ATTACKING,
-        TELEGRAPHING
-    }
-
-    private BossState state;
-    // Gemeinsames Cooldown-Gate für JEDES Angriffsmuster (anders als Enemy, das nur EIN Muster
-    // hat) - tickt unconditional in CHASING weiter, nicht nur während eines laufenden Angriffs
+    private final BossAttackPool attackPool;
+    // null = CHASING (kein Angriff läuft gerade). Bleibt bewusst bewegungslos, solange ein
+    // Angriff läuft (siehe BossAttack-Klassenkommentar) - keine Pro-Muster-Konfiguration nötig.
+    private BossAttack activeAttack;
+    // Gemeinsames Cooldown-Gate für JEDES Angriffsmuster - tickt unconditional in CHASING
+    // weiter, nicht nur während eines laufenden Angriffs
     private float attackCooldownRemaining;
-
-    private float meleeAttackRange;
-    private float meleeWindupDuration;
-    private float meleeWindupRemaining;
-    private float meleeDamage;
-    private float meleeCooldownDuration;
-
-    // Muster 2 (nur ab PHASE_TWO, siehe GDD 6/Quest 10) - GRÖSSERE Auslöse-Reichweite als der
-    // Nahkampf-Schlag: der Boss kann diesen Angriff schon aus größerem Abstand starten, das
-    // macht Phase 2 spürbar anders, nicht nur eine Farbänderung. telegraphOrigin friert die
-    // Position beim Windup-Start ein (nicht bei Auflösung neu gelesen) - der Boss bewegt sich
-    // während des Windups ohnehin nicht, hält die Regel aber unmissverständlich.
-    private float telegraphTriggerRange;
-    private float telegraphDuration;
-    private float telegraphTimeRemaining;
-    private Vector2 telegraphOrigin;
-    private float telegraphedSlamRadius;
-    private float telegraphedSlamDamage;
-    private float telegraphedSlamCooldownDuration;
-    // Chance pro Auslösegelegenheit in PHASE_TWO, Muster 2 statt Muster 1 zu wählen
-    private float patternTwoChanceInPhaseTwo;
 
     public Boss(float startX, float startY) {
         this.position = new Vector2(startX, startY);
@@ -93,20 +67,8 @@ public class Boss implements Damageable {
         this.xpValue = 100f;
 
         this.phase = BossPhase.PHASE_ONE;
-        this.state = BossState.CHASING;
+        this.attackPool = new BossAttackPool();
         this.attackCooldownRemaining = 0f;
-
-        this.meleeAttackRange = 48f;
-        this.meleeWindupDuration = 0.4f;
-        this.meleeDamage = 15f;
-        this.meleeCooldownDuration = 1.5f;
-
-        this.telegraphTriggerRange = 100f;
-        this.telegraphDuration = 0.9f;
-        this.telegraphedSlamRadius = 80f;
-        this.telegraphedSlamDamage = 25f;
-        this.telegraphedSlamCooldownDuration = 2.5f;
-        this.patternTwoChanceInPhaseTwo = 0.5f;
     }
 
     public void update(float deltaTime, Player player, Room room) {
@@ -125,71 +87,40 @@ public class Boss implements Damageable {
             phase = BossPhase.PHASE_TWO;
         }
 
+        Vector2 myCenter = getCenter();
+
+        if (activeAttack != null) {
+            activeAttack.update(deltaTime, player, room);
+            if (activeAttack.isFinished()) {
+                attackCooldownRemaining = activeAttack.getCooldownAfterFinish();
+                activeAttack = null;
+            }
+            // Bewusst KEINE Bewegung, solange ein Angriff läuft (siehe BossAttack-
+            // Klassenkommentar) - fällt hier einfach durch, da unten nur der else-Zweig bewegt
+            return;
+        }
+
         if (attackCooldownRemaining > 0) {
             attackCooldownRemaining -= deltaTime;
         }
 
-        Vector2 myCenter = getCenter();
-        Vector2 playerCenter = player.getCenter();
-        float distance = myCenter.dst(playerCenter);
-
-        switch (state) {
-            case CHASING: {
-                boolean canAttack = attackCooldownRemaining <= 0;
-                // Nur in PHASE_TWO überhaupt möglich, UND nur wenn der Zufalls-Roll dafür fällt -
-                // sonst bleibt es beim vertrauten Nahkampf-Schlag (siehe triggerMelee unten)
-                boolean triggerTelegraph = canAttack && phase == BossPhase.PHASE_TWO
-                    && distance <= telegraphTriggerRange && MathUtils.random() < patternTwoChanceInPhaseTwo;
-                boolean triggerMelee = canAttack && !triggerTelegraph && distance <= meleeAttackRange;
-
-                if (triggerTelegraph) {
-                    state = BossState.TELEGRAPHING;
-                    telegraphTimeRemaining = telegraphDuration;
-                    telegraphOrigin = myCenter.cpy();
-                } else if (triggerMelee) {
-                    state = BossState.MELEE_ATTACKING;
-                    meleeWindupRemaining = meleeWindupDuration;
-                } else {
-                    Vector2 direction = playerCenter.cpy().sub(myCenter);
-                    if (direction.len() > 0) {
-                        direction.nor();
-                    }
-                    moveWithCollision(direction.x * moveSpeed * deltaTime, direction.y * moveSpeed * deltaTime, room);
+        if (attackCooldownRemaining <= 0) {
+            BossAttack chosen = attackPool.pickTriggerable(myCenter, player, room, phase);
+            if (chosen != null) {
+                chosen.start(myCenter, player, room);
+                activeAttack = chosen;
+                if (DebugSettings.logDamage) {
+                    System.out.println("Boss startet Angriff: " + chosen.getName());
                 }
-                break;
+                return;
             }
-            case MELEE_ATTACKING:
-                // Bewusst bewegungslos während der Vorwarnzeit (siehe GDD 6/Quest 10) - konsistente,
-                // leicht nachvollziehbare Regel, gilt genauso für Muster 2 (siehe TELEGRAPHING unten)
-                meleeWindupRemaining -= deltaTime;
-                if (meleeWindupRemaining <= 0) {
-                    if (myCenter.dst(player.getCenter()) <= meleeAttackRange) {
-                        if (DebugSettings.logDamage) {
-                            System.out.println("Boss trifft mit Nahkampf-Schlag!");
-                        }
-                        player.takeDamage(meleeDamage);
-                    }
-                    attackCooldownRemaining = meleeCooldownDuration;
-                    state = BossState.CHASING;
-                }
-                break;
-            case TELEGRAPHING:
-                telegraphTimeRemaining -= deltaTime;
-                if (telegraphTimeRemaining <= 0) {
-                    // Gegen den EINGEFRORENEN telegraphOrigin geprüft, nicht die aktuelle
-                    // Boss-Position (auch wenn er sich während des Windups ohnehin nicht bewegt) -
-                    // macht die "an dieser Stelle ausweichen"-Regel unmissverständlich
-                    if (telegraphOrigin.dst(player.getCenter()) <= telegraphedSlamRadius) {
-                        if (DebugSettings.logDamage) {
-                            System.out.println("Boss trifft mit AOE-Slam!");
-                        }
-                        player.takeDamage(telegraphedSlamDamage);
-                    }
-                    attackCooldownRemaining = telegraphedSlamCooldownDuration;
-                    state = BossState.CHASING;
-                }
-                break;
         }
+
+        Vector2 direction = player.getCenter().cpy().sub(myCenter);
+        if (direction.len() > 0) {
+            direction.nor();
+        }
+        moveWithCollision(direction.x * moveSpeed * deltaTime, direction.y * moveSpeed * deltaTime, room);
     }
 
     // Kopie von Enemy.moveWithCollision() (siehe Klassenkommentar)
@@ -273,20 +204,10 @@ public class Boss implements Damageable {
     public void draw(ShapeRenderer shapeRenderer) {
         Vector2 center = getCenter();
 
-        // Angriffs-Vorwarnung (Nutzer-Feedback: reines Stehenbleiben war nicht klar genug lesbar)
-        // - während des Windups WÄCHST ein Warnkreis von 0 auf die tatsächliche Trefferreichweite
-        // und färbt sich dabei gelb->rot, zeigt also gleichzeitig Timing UND Trefferzone
-        // ("Hurtbox des Angriffs"). VOR dem Körper gezeichnet, damit der Körper obenauf bleibt.
-        // Dieselbe Technik für beide Angriffsmuster - gemeinsame visuelle Sprache.
-        if (state == BossState.MELEE_ATTACKING) {
-            float progress = 1f - (meleeWindupRemaining / meleeWindupDuration);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.circle(center.x, center.y, meleeAttackRange * progress);
-        } else if (state == BossState.TELEGRAPHING) {
-            // Um den EINGEFRORENEN telegraphOrigin statt der aktuellen Boss-Position (siehe update())
-            float progress = 1f - (telegraphTimeRemaining / telegraphDuration);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.circle(telegraphOrigin.x, telegraphOrigin.y, telegraphedSlamRadius * progress);
+        // Der aktive Angriff zeichnet seinen eigenen Telegraph/Effekt (siehe BossAttack.draw())
+        // VOR dem Körper, damit der Körper obenauf bleibt (gleiche Reihenfolge wie bisher)
+        if (activeAttack != null) {
+            activeAttack.draw(shapeRenderer);
         }
 
         if (hurtTimeRemaining > 0) {

@@ -1,0 +1,85 @@
+package com.github.alexalde.emberroguelike;
+
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
+
+// Muster 2 (siehe GDD 6/Quest 10) - nur ab PHASE_TWO, GRÖSSERE Auslöse-Reichweite als
+// MeleeSlamAttack (macht Phase 2 spürbar anders, nicht nur eine Farbänderung), längerer Windup,
+// größerer Radius/Schaden/Cooldown. Migriert aus dem ursprünglichen Boss.TELEGRAPHING-Zustand
+// (Quest 10.5) ins BossAttack-System (Quest 10.9) - Zahlenwerte unverändert.
+public class TelegraphedAoeAttack implements BossAttack {
+
+    private final float triggerRange;
+    private final float windupDuration;
+    private final float slamRadius;
+    private final float damage;
+    private final float cooldownDuration;
+
+    private Vector2 origin;
+    private float windupRemaining;
+    private boolean finished;
+
+    public TelegraphedAoeAttack(float triggerRange, float windupDuration, float slamRadius, float damage, float cooldownDuration) {
+        this.triggerRange = triggerRange;
+        this.windupDuration = windupDuration;
+        this.slamRadius = slamRadius;
+        this.damage = damage;
+        this.cooldownDuration = cooldownDuration;
+    }
+
+    @Override
+    public void start(Vector2 origin, Player player, Room room) {
+        // Eingefroren beim Windup-Start - gegen DIESE Position wird später aufgelöst, nicht die
+        // (ohnehin unveränderte) aktuelle Boss-Position, macht die "an dieser Stelle
+        // ausweichen"-Regel unmissverständlich
+        this.origin = origin.cpy();
+        this.windupRemaining = windupDuration;
+        this.finished = false;
+    }
+
+    @Override
+    public void update(float deltaTime, Player player, Room room) {
+        if (finished) {
+            return;
+        }
+        windupRemaining -= deltaTime;
+        if (windupRemaining <= 0) {
+            if (origin.dst(player.getCenter()) <= slamRadius) {
+                if (DebugSettings.logDamage) {
+                    System.out.println("Boss trifft mit " + getName() + "!");
+                }
+                player.takeDamage(damage);
+            }
+            finished = true;
+        }
+    }
+
+    @Override
+    public boolean isFinished() {
+        return finished;
+    }
+
+    @Override
+    public void draw(ShapeRenderer shapeRenderer) {
+        float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
+        shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
+        shapeRenderer.circle(origin.x, origin.y, slamRadius * progress);
+    }
+
+    @Override
+    public boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase) {
+        return phase == BossPhase.PHASE_TWO && origin.dst(player.getCenter()) <= triggerRange;
+    }
+
+    @Override
+    public float getCooldownAfterFinish() {
+        return cooldownDuration;
+    }
+
+    @Override
+    public String getName() {
+        return "AOE-Slam";
+    }
+}
