@@ -73,6 +73,9 @@ public class Main extends ApplicationAdapter {
     private UpgradeShopUI activeShop;
     private boolean roomRewardGranted;
     private boolean roomHadEnemies;
+    // Snapshot bei Raumbetreten (siehe enterRoom()) - "boss" selbst ist zum Zeitpunkt des
+    // Raum-Clear-Triggers schon wieder null (siehe Boss-Entfernungs-Block), daher separat gemerkt
+    private boolean roomHadBoss;
 
     // Persistenter, Run-übergreifender Charakterbogen (siehe GDD 3.2/Quest 9) - einmalig beim
     // App-Start geladen (siehe create()), überlebt jeden Player-Neuaufbau in startGame(). Main
@@ -88,6 +91,12 @@ public class Main extends ApplicationAdapter {
     private static final float UPGRADE_CURRENCY_DROP_CHANCE = 0.3f;
     private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
     private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
+
+    // Boss-Belohnung (siehe GDD 6/Quest 10) - deutlich über normalen Beträgen, GARANTIERT statt
+    // einer Chance (ein Boss-Kill soll nie "leer ausgehen"). Grobe erste Werte, kein finales
+    // Balancing.
+    private static final float BOSS_UPGRADE_CURRENCY_AMOUNT = 50f;
+    private static final float BOSS_UNLOCK_CURRENCY_AMOUNT = 30f;
 
     // Debug-Menü (siehe DebugValue/DebugMenuUI) - debugValues wird EINMALIG in create() gebaut,
     // die Lambdas greifen über die Instanzfelder "player"/"metaProgress" zu, bleiben also auch
@@ -184,6 +193,9 @@ public class Main extends ApplicationAdapter {
                 enemy.dispose();
             }
         }
+        if (boss != null) {
+            boss.dispose();
+        }
         if (pickups != null) {
             for (Pickup pickup : pickups) {
                 pickup.dispose();
@@ -194,17 +206,25 @@ public class Main extends ApplicationAdapter {
         player.setCenter(spawnCenter);
 
         // Bereits geleerte Räume (siehe clearedRoomPaths) spawnen beim erneuten Betreten (z.B.
-        // Backtracking im Raum-Graphen) keine Gegner mehr neu
+        // Backtracking im Raum-Graphen) weder Gegner noch Boss neu
         enemies = new ArrayList<>();
+        boss = null;
         if (!clearedRoomPaths.contains(room.getTmxPath())) {
             for (Vector2 spawnPoint : room.getEnemySpawnPoints()) {
                 enemies.add(new Enemy(spawnPoint.x, spawnPoint.y));
             }
+            Vector2 bossSpawn = room.getBossSpawn();
+            if (bossSpawn != null) {
+                boss = new Boss(bossSpawn.x, bossSpawn.y);
+            }
         }
         pickups = new ArrayList<>();
 
-        // Beute-Zustand für den (neuen) Raum zurücksetzen - siehe roomHadEnemies/roomRewardGranted
-        roomHadEnemies = !enemies.isEmpty();
+        // Beute-Zustand für den (neuen) Raum zurücksetzen - siehe roomHadEnemies/roomRewardGranted.
+        // roomHadBoss wird separat gemerkt, weil "boss" selbst beim Raum-Clear-Trigger schon
+        // wieder null ist (siehe Boss-Entfernungs-Block in render()).
+        roomHadEnemies = !enemies.isEmpty() || boss != null;
+        roomHadBoss = boss != null;
         roomRewardGranted = false;
     }
 
@@ -411,10 +431,11 @@ public class Main extends ApplicationAdapter {
             }
             if (boss != null) {
                 boss.update(deltaTime, player, room);
-                // Vorläufig (siehe Quest 10.7 für die volle Belohnungs-/Raum-Integration) - nur
-                // ein einfacher XP-Drop, damit der Boss über die Debug-Taste testbar ist
                 if (boss.isRemovable()) {
                     pickups.add(new XpPickup(boss.getCenter(), boss.getXpValue()));
+                    // GARANTIERT statt der 30%-Chance bei normalen Gegnern (siehe GDD 6/Quest 10) -
+                    // ein Boss-Kill soll nie "leer ausgehen"
+                    pickups.add(new CurrencyPickup(boss.getCenter(), MetaCurrencyType.UPGRADE, BOSS_UPGRADE_CURRENCY_AMOUNT));
                     boss.dispose();
                     boss = null;
                 }
@@ -476,12 +497,13 @@ public class Main extends ApplicationAdapter {
                 pendingRewardBatches.add(itemPool.pickRandom(3));
             }
 
-            // Türen bleiben verriegelt, solange noch Gegner LEBEN - bewusst NICHT
+            // Türen bleiben verriegelt, solange noch Gegner ODER der Boss LEBEN - bewusst NICHT
             // enemies.isEmpty(), sonst würde eine Leiche, die noch ihre Sterbeanimation
-            // abspielt, die Tür unnötig verriegelt halten
-            boolean anyEnemyAlive = enemies.stream().anyMatch(Enemy::isAlive);
+            // abspielt, die Tür unnötig verriegelt halten. "anyHostileAlive" statt
+            // "anyEnemyAlive" (Quest 10) - ein Boss ist kein Enemy, aber genauso feindlich.
+            boolean anyHostileAlive = enemies.stream().anyMatch(Enemy::isAlive) || (boss != null && boss.isAlive());
             for (Door door : room.getDoors()) {
-                door.setLocked(anyEnemyAlive);
+                door.setLocked(anyHostileAlive);
 
                 if (door.isPlayerInRange(player.getCenter())) {
                     switchRoom(door.getTargetRoom(), door.getTargetDoorName());
@@ -514,20 +536,30 @@ public class Main extends ApplicationAdapter {
             }
 
             // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8) - genau einmal pro Raumbesuch, nur für
-            // Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty() statt !anyEnemyAlive
+            // Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty() statt !anyHostileAlive
             // (anders als beim Tür-Lock oben): so löst die Belohnung erst aus, wenn der letzte
             // Gegner komplett entfernt ist (Sterbeanimation fertig, siehe Enemy.isRemovable()),
             // nicht schon im selben Frame, in dem er den tödlichen Treffer kassiert. Langfristig
             // soll das ohnehin durch einen Beute-Drop des letzten Gegners ersetzt werden (siehe
-            // ROADMAP) statt eines Auto-Triggers.
-            if (roomHadEnemies && enemies.isEmpty() && !roomRewardGranted) {
+            // ROADMAP) statt eines Auto-Triggers. "boss == null" wartet analog auf dessen
+            // Sterbeanimations-Grace-Window (siehe Boss.isRemovable()/Boss-Entfernungs-Block oben).
+            if (roomHadEnemies && enemies.isEmpty() && boss == null && !roomRewardGranted) {
                 roomRewardGranted = true;
                 clearedRoomPaths.add(room.getTmxPath());
                 pendingRewardBatches.add(itemPool.pickRandom(3));
-                // Zusätzlich seltene Unlock-Währung, an den Meilenstein "Raum geschafft"
-                // gekoppelt (siehe GDD 3.1 "Freischaltungen über Meilensteine") - dropt an der
-                // Spielerposition, da es keinen "letzten Gegner" als Ursprung mehr gibt
-                pickups.add(new CurrencyPickup(player.getCenter(), MetaCurrencyType.UNLOCK, UNLOCK_CURRENCY_DROP_AMOUNT));
+                // Boss-Räume bekommen eine spürbar größere Belohnung (siehe GDD 6/Quest 10):
+                // größere Unlock-Währung statt der normalen Menge, PLUS eine zweite
+                // Item-Auswahlrunde - reine Wiederverwendung bestehender Mechanik, kein neuer
+                // Belohnungstyp. "roomHadBoss" statt "boss != null", da boss hier schon wieder
+                // null ist (siehe Boss-Entfernungs-Block).
+                float unlockAmount = roomHadBoss ? BOSS_UNLOCK_CURRENCY_AMOUNT : UNLOCK_CURRENCY_DROP_AMOUNT;
+                if (roomHadBoss) {
+                    pendingRewardBatches.add(itemPool.pickRandom(3));
+                }
+                // Zusätzlich Unlock-Währung, an den Meilenstein "Raum geschafft" gekoppelt (siehe
+                // GDD 3.1 "Freischaltungen über Meilensteine") - dropt an der Spielerposition, da
+                // es keinen "letzten Gegner" als Ursprung mehr gibt
+                pickups.add(new CurrencyPickup(player.getCenter(), MetaCurrencyType.UNLOCK, unlockAmount));
             }
 
             if (!player.isAlive()) {
