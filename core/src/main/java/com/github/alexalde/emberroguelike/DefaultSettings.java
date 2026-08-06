@@ -31,4 +31,9 @@ public class DefaultSettings {
 
     // Öffnet/schließt das Debug-Menü (siehe DebugMenuUI) - bisher unbenutzte Taste
     public static final int DEBUG_MENU_TOGGLE_KEY = Input.Keys.F1;
+
+    // Spawnt einen Boss neben dem Spieler im aktuellen Raum (siehe GDD 6/Quest 10) - erlaubt
+    // Testen ohne Tiled-Änderung, bleibt dauerhaft als Debug-Werkzeug bestehen (auch in Räumen
+    // ohne echten BossSpawn-Objekt nützlich)
+    public static final int DEBUG_BOSS_SPAWN_KEY = Input.Keys.F2;
 }

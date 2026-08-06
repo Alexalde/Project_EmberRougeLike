@@ -43,6 +43,10 @@ public class Main extends ApplicationAdapter {
     private Room room;
     private Player player; // Hier ist unser Spieler-Objekt!
     private List<Enemy> enemies;
+    // null, solange kein Boss im aktuellen Raum ist (siehe GDD 6/Quest 10) - vorerst nur über die
+    // Debug-Taste (GameSettings.bossDebugSpawnKey) spawnbar, echte Raum-Integration folgt in
+    // Quest 10.7
+    private Boss boss;
     private boolean gameOver;
 
     // Pfade bereits geleerter Räume für den AKTUELLEN Run (siehe enterRoom()) - verhindert, dass
@@ -333,6 +337,13 @@ public class Main extends ApplicationAdapter {
                 : null;
         }
 
+        // Debug-Werkzeug (siehe GameSettings.bossDebugSpawnKey, Quest 10.3) - spawnt einen Boss
+        // ohne Tiled-Änderung, bleibt auch nach der echten BossSpawn-Integration (Quest 10.7)
+        // bestehen. Nur EIN Boss gleichzeitig, kein Effekt wenn schon einer da ist.
+        if (Gdx.input.isKeyJustPressed(GameSettings.bossDebugSpawnKey) && boss == null) {
+            boss = new Boss(player.getCenter().x + 100f, player.getCenter().y);
+        }
+
         // Bildschirm-Mausposition in die logische Welt-Koordinate umrechnen - berücksichtigt
         // automatisch den aktuellen Skalierungsfaktor UND die Letterboxing-Verschiebung
         Vector3 mouseScreenCoords = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
@@ -388,11 +399,25 @@ public class Main extends ApplicationAdapter {
         } else if (!gameOver) {
             // Player.update() braucht List<Damageable> (siehe Quest 10) statt List<Enemy> direkt -
             // Java-Generics sind invariant, eine List<Enemy> lässt sich nicht direkt übergeben.
-            // Enthält vorerst nur "enemies" - ein Boss (Quest 10.3+) wird hier bei Bedarf ergänzt.
-            player.update(deltaTime, new ArrayList<Damageable>(enemies), mouseWorldPosition, room);
+            // Boss wird mit reingenommen, sobald er lebt, damit Sword/Bow/Projectile ihn treffen.
+            List<Damageable> combatTargets = new ArrayList<>(enemies);
+            if (boss != null && boss.isAlive()) {
+                combatTargets.add(boss);
+            }
+            player.update(deltaTime, combatTargets, mouseWorldPosition, room);
 
             for (Enemy enemy : enemies) {
                 enemy.update(deltaTime, player, room);
+            }
+            if (boss != null) {
+                boss.update(deltaTime, player, room);
+                // Vorläufig (siehe Quest 10.7 für die volle Belohnungs-/Raum-Integration) - nur
+                // ein einfacher XP-Drop, damit der Boss über die Debug-Taste testbar ist
+                if (boss.isRemovable()) {
+                    pickups.add(new XpPickup(boss.getCenter(), boss.getXpValue()));
+                    boss.dispose();
+                    boss = null;
+                }
             }
 
             // Entfernbare Gegner entfernen (tot UND Sterbeanimation fertig, siehe
@@ -524,6 +549,17 @@ public class Main extends ApplicationAdapter {
         // 3. Zeichnen - Raum zuerst (eigenes internes SpriteBatch, daher außerhalb von batch.begin()/end())
         room.render(camera);
 
+        // Boss-Platzhalter (siehe Boss.draw(), Quest 10) - UNCONDITIONAL (kein Debug-Overlay,
+        // sondern sein tatsächlicher Körper), eigener ShapeRenderer-Durchgang VOR dem
+        // SpriteBatch-Weltdurchgang, damit Spieler/Gegner/Pickups (SpriteBatch) immer sichtbar
+        // über dem großen Platzhalter-Kreis liegen
+        if (boss != null) {
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            boss.draw(shapeRenderer);
+            shapeRenderer.end();
+        }
+
         // Jeden Frame neu setzen (nicht nur einmal in create()) - wichtig, sobald die Kamera sich
         // später bewegt (siehe Diskussion zu größeren, scrollenden Räumen)
         batch.setProjectionMatrix(camera.combined);
@@ -649,6 +685,10 @@ public class Main extends ApplicationAdapter {
                 enemy.drawHitboxDebug(shapeRenderer);
                 enemy.drawTerrainCollisionDebug(shapeRenderer);
             }
+            if (boss != null) {
+                boss.drawHitboxDebug(shapeRenderer);
+                boss.drawTerrainCollisionDebug(shapeRenderer);
+            }
             shapeRenderer.end();
         }
 
@@ -671,6 +711,9 @@ public class Main extends ApplicationAdapter {
         player.dispose(); // Auch der Spieler muss seinen Speicher aufräumen
         for (Enemy enemy : enemies) {
             enemy.dispose();
+        }
+        if (boss != null) {
+            boss.dispose();
         }
         for (Pickup pickup : pickups) {
             pickup.dispose();
