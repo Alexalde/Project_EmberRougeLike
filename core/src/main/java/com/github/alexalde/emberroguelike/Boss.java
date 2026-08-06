@@ -40,16 +40,53 @@ public class Boss implements Damageable {
     private static final float HURT_FLASH_DURATION = 0.15f;
     private static final float DEATH_ANIMATION_DURATION = 0.6f;
 
+    // Phasenwechsel bei HP-Schwelle (siehe GDD 6/Quest 10) - einmaliger, einseitiger Wechsel
+    // (Boss heilt hier nicht, keine Rückwärts-Transition nötig). Grober erster Wert, kein
+    // finales Balancing.
+    private enum BossPhase {
+        PHASE_ONE,
+        PHASE_TWO
+    }
+
+    private BossPhase phase;
+    private static final float PHASE_TWO_HP_THRESHOLD = 0.5f;
+
+    // TELEGRAPHING wird erst in Quest 10.5 (Muster 2) genutzt - bereits jetzt mit angelegt,
+    // damit der Enum-Typ danach nicht nochmal angefasst werden muss
+    private enum BossState {
+        CHASING,
+        MELEE_ATTACKING,
+        TELEGRAPHING
+    }
+
+    private BossState state;
+    // Gemeinsames Cooldown-Gate für JEDES Angriffsmuster (anders als Enemy, das nur EIN Muster
+    // hat) - tickt unconditional in CHASING weiter, nicht nur während eines laufenden Angriffs
+    private float attackCooldownRemaining;
+
+    private float meleeAttackRange;
+    private float meleeWindupDuration;
+    private float meleeWindupRemaining;
+    private float meleeDamage;
+    private float meleeCooldownDuration;
+
     public Boss(float startX, float startY) {
         this.position = new Vector2(startX, startY);
         this.maxHealth = 300f;
         this.health = maxHealth;
         this.moveSpeed = 50f;
         this.xpValue = 100f;
+
+        this.phase = BossPhase.PHASE_ONE;
+        this.state = BossState.CHASING;
+        this.attackCooldownRemaining = 0f;
+
+        this.meleeAttackRange = 48f;
+        this.meleeWindupDuration = 0.4f;
+        this.meleeDamage = 15f;
+        this.meleeCooldownDuration = 1.5f;
     }
 
-    // Noch ohne Angriffsmuster (siehe Quest 10.4/10.5) - verfolgt vorerst nur den Spieler,
-    // gleiches Bewegungsprinzip wie Enemy.CHASING
     public void update(float deltaTime, Player player, Room room) {
         if (hurtTimeRemaining > 0) {
             hurtTimeRemaining -= deltaTime;
@@ -62,12 +99,50 @@ public class Boss implements Damageable {
             return;
         }
 
-        Vector2 myCenter = getCenter();
-        Vector2 direction = player.getCenter().cpy().sub(myCenter);
-        if (direction.len() > 0) {
-            direction.nor();
+        if (phase == BossPhase.PHASE_ONE && health <= maxHealth * PHASE_TWO_HP_THRESHOLD) {
+            phase = BossPhase.PHASE_TWO;
         }
-        moveWithCollision(direction.x * moveSpeed * deltaTime, direction.y * moveSpeed * deltaTime, room);
+
+        if (attackCooldownRemaining > 0) {
+            attackCooldownRemaining -= deltaTime;
+        }
+
+        Vector2 myCenter = getCenter();
+        Vector2 playerCenter = player.getCenter();
+        float distance = myCenter.dst(playerCenter);
+
+        switch (state) {
+            case CHASING:
+                if (attackCooldownRemaining <= 0 && distance <= meleeAttackRange) {
+                    state = BossState.MELEE_ATTACKING;
+                    meleeWindupRemaining = meleeWindupDuration;
+                } else {
+                    Vector2 direction = playerCenter.cpy().sub(myCenter);
+                    if (direction.len() > 0) {
+                        direction.nor();
+                    }
+                    moveWithCollision(direction.x * moveSpeed * deltaTime, direction.y * moveSpeed * deltaTime, room);
+                }
+                break;
+            case MELEE_ATTACKING:
+                // Bewusst bewegungslos während der Vorwarnzeit (siehe GDD 6/Quest 10) - konsistente,
+                // leicht nachvollziehbare Regel, gilt später genauso für Muster 2 (Quest 10.5)
+                meleeWindupRemaining -= deltaTime;
+                if (meleeWindupRemaining <= 0) {
+                    if (myCenter.dst(player.getCenter()) <= meleeAttackRange) {
+                        if (DebugSettings.logDamage) {
+                            System.out.println("Boss trifft mit Nahkampf-Schlag!");
+                        }
+                        player.takeDamage(meleeDamage);
+                    }
+                    attackCooldownRemaining = meleeCooldownDuration;
+                    state = BossState.CHASING;
+                }
+                break;
+            case TELEGRAPHING:
+                // Kommt in Quest 10.5 (Muster 2) - noch kein Zustand, der aktuell erreicht wird
+                break;
+        }
     }
 
     // Kopie von Enemy.moveWithCollision() (siehe Klassenkommentar)
@@ -145,11 +220,28 @@ public class Boss implements Damageable {
     }
 
     // Reiner ShapeRenderer-Platzhalter (siehe Klassenkommentar) - kurzer heller Blitz bei
-    // Treffern, sonst durchgehend dunkelrot. Erwartet ein bereits laufendes
-    // ShapeRenderer.begin(ShapeType.Filled) (siehe Main.render())
+    // Treffern, sonst Körperfarbe je nach Phase (dunkelrot in Phase 1, kräftigeres Rot ab Phase
+    // 2 - sofort sichtbares Feedback, dass der Phasenwechsel ausgelöst hat). Erwartet ein
+    // bereits laufendes ShapeRenderer.begin(ShapeType.Filled) (siehe Main.render())
     public void draw(ShapeRenderer shapeRenderer) {
         Vector2 center = getCenter();
-        shapeRenderer.setColor(hurtTimeRemaining > 0 ? Color.WHITE : Color.MAROON);
+
+        // Angriffs-Vorwarnung (Nutzer-Feedback: reines Stehenbleiben war nicht klar genug lesbar)
+        // - während des Windups WÄCHST ein Warnkreis von 0 auf die tatsächliche Trefferreichweite
+        // und färbt sich dabei gelb->rot, zeigt also gleichzeitig Timing UND Trefferzone
+        // ("Hurtbox des Angriffs"). VOR dem Körper gezeichnet, damit der Körper obenauf bleibt.
+        // Gleiche Technik wird Muster 2 (Quest 10.5) wiederverwenden.
+        if (state == BossState.MELEE_ATTACKING) {
+            float progress = 1f - (meleeWindupRemaining / meleeWindupDuration);
+            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
+            shapeRenderer.circle(center.x, center.y, meleeAttackRange * progress);
+        }
+
+        if (hurtTimeRemaining > 0) {
+            shapeRenderer.setColor(Color.WHITE);
+        } else {
+            shapeRenderer.setColor(phase == BossPhase.PHASE_TWO ? Color.RED : Color.MAROON);
+        }
         shapeRenderer.circle(center.x, center.y, SPRITE_WIDTH / 2f);
     }
 
