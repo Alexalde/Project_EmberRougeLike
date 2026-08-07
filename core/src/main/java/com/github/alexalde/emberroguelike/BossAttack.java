@@ -5,9 +5,8 @@ import com.badlogic.gdx.math.Vector2;
 
 // Ein einzelnes Boss-Angriffsmuster (siehe GDD 6/Quest 10) - eigenständige Mini-Zustandsmaschine:
 // start() (Windup beginnt) -> update() (Windup -> Auflösung/Spawn -> ggf. aktive Phase) ->
-// isFinished(). Boss hält höchstens EIN activeAttack gleichzeitig und bleibt bewegungslos,
-// solange einer läuft (das ist bewusst KEIN Teil dieses Interfaces - jedes aktuelle und geplante
-// Muster will das ohnehin, keine Pro-Muster-Konfiguration für einen Fall, der noch nicht existiert).
+// isFinished(). Boss kann MEHRERE Angriffe gleichzeitig aktiv haben (Layering, siehe
+// AttackCategory) - höchstens einen pro Kategorie, verschiedene Kategorien dürfen parallel laufen.
 //
 // Implementierungen sind LANGLEBIG und werden über mehrere Auslösungen hinweg wiederverwendet
 // (siehe BossAttackPool) - start() muss deshalb JEDEN internen Zustand vollständig zurücksetzen.
@@ -39,6 +38,18 @@ public interface BossAttack {
 
     // Cooldown, der nach isFinished() greift, bevor der Boss das NÄCHSTE Muster auslösen darf
     float getCooldownAfterFinish();
+
+    // Slot, den dieser Angriff belegt (siehe AttackCategory) - der Boss darf höchstens einen
+    // aktiven Angriff PRO Kategorie gleichzeitig haben, verschiedene Kategorien laufen parallel
+    AttackCategory getCategory();
+
+    // Ob der Boss stillstehen muss, solange DIESER Angriff aktiv ist. Default true, weil das
+    // bisher jedes Muster ohnehin wollte (keine Verhaltensänderung an den 8 bestehenden Mustern) -
+    // beim Layering mehrerer gleichzeitig aktiver Angriffe reicht EIN true, damit der Boss
+    // stillsteht (siehe Boss.update()), deshalb kein Override in den bestehenden Klassen nötig.
+    default boolean requiresStationary() {
+        return true;
+    }
 
     // Fürs Debug-Log (siehe DebugSettings.logDamage)
     String getName();

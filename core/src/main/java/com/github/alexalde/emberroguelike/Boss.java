@@ -6,14 +6,18 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 // Erster Boss (siehe GDD 6/Quest 10) - bewusst eine EIGENSTÄNDIGE Klasse, KEINE Enemy-Vererbung
 // (Nutzer-Entscheidung: eigener Platz für Phasen-/Angriffsmuster-Logik, ohne Enemy damit zu
 // überladen). Implementiert stattdessen Damageable, damit Sword/Bow/Projectile ihn treffen können,
 // ohne von Enemy zu wissen (siehe Damageable.java).
 //
 // Angriffsmuster leben seit Quest 10.9 als eigene BossAttack-Implementierungen (siehe
-// BossAttackPool) statt Boss-interner Zustandslogik - Boss orchestriert nur noch, welches Muster
-// gerade läuft ("activeAttack", null = CHASING).
+// BossAttackPool) statt Boss-interner Zustandslogik. Seit dem Layering-Umbau (Task #81) kann
+// PRO AttackCategory (siehe AttackCategory.java) höchstens ein Muster gleichzeitig aktiv sein,
+// verschiedene Kategorien laufen aber parallel (z.B. Beam + Projektil-Burst gleichzeitig).
 //
 // Terrain-Kollision (moveWithCollision/collidesWithRoom) ist eine bewusste KOPIE von Enemys
 // privater Logik, keine gemeinsame Extraktion - die "eigene Klasse"-Entscheidung steht schon fest,
@@ -52,12 +56,12 @@ public class Boss implements Damageable {
     private static final float PHASE_TWO_HP_THRESHOLD = 0.5f;
 
     private final BossAttackPool attackPool;
-    // null = CHASING (kein Angriff läuft gerade). Bleibt bewusst bewegungslos, solange ein
-    // Angriff läuft (siehe BossAttack-Klassenkommentar) - keine Pro-Muster-Konfiguration nötig.
-    private BossAttack activeAttack;
-    // Gemeinsames Cooldown-Gate für JEDES Angriffsmuster - tickt unconditional in CHASING
-    // weiter, nicht nur während eines laufenden Angriffs
-    private float attackCooldownRemaining;
+    // Ein Slot PRO AttackCategory (siehe Layering, Task #81) - fehlender Eintrag = Slot frei.
+    // EnumMap statt HashMap, da AttackCategory ein Enum mit fester, kleiner Wertemenge ist.
+    private final Map<AttackCategory, BossAttack> activeAttacks = new EnumMap<>(AttackCategory.class);
+    // Cooldown PRO Kategorie, unabhängig voneinander - tickt unconditional weiter, auch während
+    // eine ANDERE Kategorie gerade aktiv ist, nicht nur wenn der Boss komplett untätig ist
+    private final Map<AttackCategory, Float> categoryCooldownRemaining = new EnumMap<>(AttackCategory.class);
 
     public Boss(float startX, float startY) {
         this.position = new Vector2(startX, startY);
@@ -68,7 +72,9 @@ public class Boss implements Damageable {
 
         this.phase = BossPhase.PHASE_ONE;
         this.attackPool = new BossAttackPool();
-        this.attackCooldownRemaining = 0f;
+        for (AttackCategory category : AttackCategory.values()) {
+            categoryCooldownRemaining.put(category, 0f);
+        }
     }
 
     public void update(float deltaTime, Player player, Room room) {
@@ -89,31 +95,48 @@ public class Boss implements Damageable {
 
         Vector2 myCenter = getCenter();
 
-        if (activeAttack != null) {
-            activeAttack.update(deltaTime, player, room);
-            if (activeAttack.isFinished()) {
-                attackCooldownRemaining = activeAttack.getCooldownAfterFinish();
-                activeAttack = null;
+        // Laufende Angriffe aktualisieren, fertige aus dem Slot entfernen und deren
+        // Kategorie-Cooldown starten (jede Kategorie unabhängig von den anderen)
+        for (AttackCategory category : AttackCategory.values()) {
+            BossAttack active = activeAttacks.get(category);
+            if (active == null) {
+                continue;
             }
-            // Bewusst KEINE Bewegung, solange ein Angriff läuft (siehe BossAttack-
-            // Klassenkommentar) - fällt hier einfach durch, da unten nur der else-Zweig bewegt
-            return;
+            active.update(deltaTime, player, room);
+            if (active.isFinished()) {
+                categoryCooldownRemaining.put(category, active.getCooldownAfterFinish());
+                activeAttacks.remove(category);
+            }
         }
 
-        if (attackCooldownRemaining > 0) {
-            attackCooldownRemaining -= deltaTime;
+        for (AttackCategory category : AttackCategory.values()) {
+            float cooldown = categoryCooldownRemaining.get(category);
+            if (cooldown > 0) {
+                categoryCooldownRemaining.put(category, cooldown - deltaTime);
+            }
         }
 
-        if (attackCooldownRemaining <= 0) {
-            BossAttack chosen = attackPool.pickTriggerable(myCenter, player, room, phase);
+        // Für jeden freien, cooldown-bereiten Slot ein neues Muster auslösen
+        for (AttackCategory category : AttackCategory.values()) {
+            if (activeAttacks.containsKey(category) || categoryCooldownRemaining.get(category) > 0) {
+                continue;
+            }
+            BossAttack chosen = attackPool.pickTriggerable(myCenter, player, room, phase, category);
             if (chosen != null) {
                 chosen.start(myCenter, player, room);
-                activeAttack = chosen;
+                activeAttacks.put(category, chosen);
                 if (DebugSettings.logDamage) {
                     System.out.println("Boss startet Angriff: " + chosen.getName());
                 }
-                return;
             }
+        }
+
+        // Bewegungslos, solange IRGENDEIN aktiver Angriff das verlangt (siehe
+        // BossAttack.requiresStationary()) - ein einzelnes true reicht, egal wie viele andere
+        // Kategorien parallel laufen
+        boolean mustStayStill = activeAttacks.values().stream().anyMatch(BossAttack::requiresStationary);
+        if (mustStayStill) {
+            return;
         }
 
         Vector2 direction = player.getCenter().cpy().sub(myCenter);
@@ -204,10 +227,10 @@ public class Boss implements Damageable {
     public void draw(ShapeRenderer shapeRenderer) {
         Vector2 center = getCenter();
 
-        // Der aktive Angriff zeichnet seinen eigenen Telegraph/Effekt (siehe BossAttack.draw())
-        // VOR dem Körper, damit der Körper obenauf bleibt (gleiche Reihenfolge wie bisher)
-        if (activeAttack != null) {
-            activeAttack.draw(shapeRenderer);
+        // ALLE aktiven Angriffe (über alle Kategorien/Slots) zeichnen ihren eigenen Telegraph/
+        // Effekt VOR dem Körper, damit der Körper obenauf bleibt (gleiche Reihenfolge wie bisher)
+        for (BossAttack active : activeAttacks.values()) {
+            active.draw(shapeRenderer);
         }
 
         if (hurtTimeRemaining > 0) {

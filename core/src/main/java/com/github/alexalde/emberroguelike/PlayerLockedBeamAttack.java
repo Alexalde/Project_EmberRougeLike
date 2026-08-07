@@ -147,6 +147,11 @@ public class PlayerLockedBeamAttack implements BossAttack {
     }
 
     @Override
+    public AttackCategory getCategory() {
+        return AttackCategory.BEAM;
+    }
+
+    @Override
     public String getName() {
         return "Spieler-Beam";
     }

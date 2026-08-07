@@ -70,15 +70,18 @@ public class BossAttackPool {
         return weights;
     }
 
-    // Gewichtete Zufallswahl unter allen aktuell auslösbaren Mustern DER JEWEILIGEN PHASE,
+    // Gewichtete Zufallswahl unter allen aktuell auslösbaren Mustern DER JEWEILIGEN PHASE UND
+    // KATEGORIE (siehe AttackCategory/Layering - der Boss ruft das pro freiem Slot separat auf),
     // null wenn keins passt. Aktualisiert die Pity-Gewichte als Seiteneffekt (siehe Klassenkommentar).
-    public BossAttack pickTriggerable(Vector2 origin, Player player, Room room, BossPhase phase) {
+    // Die Pity-Konkurrenz bleibt dadurch automatisch auf Muster DERSELBEN Kategorie beschränkt -
+    // kein separates Gewichts-Tracking pro Kategorie nötig, "triggerable" ist ja schon gefiltert.
+    public BossAttack pickTriggerable(Vector2 origin, Player player, Room room, BossPhase phase, AttackCategory category) {
         List<BossAttack> attacks = phase == BossPhase.PHASE_TWO ? phaseTwoAttacks : phaseOneAttacks;
         Map<BossAttack, Float> workingWeights = phase == BossPhase.PHASE_TWO ? phaseTwoWorkingWeights : phaseOneWorkingWeights;
 
         List<BossAttack> triggerable = new ArrayList<>();
         for (BossAttack attack : attacks) {
-            if (attack.canTrigger(origin, player, room)) {
+            if (attack.getCategory() == category && attack.canTrigger(origin, player, room)) {
                 triggerable.add(attack);
             }
         }

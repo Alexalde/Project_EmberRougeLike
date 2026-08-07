@@ -88,6 +88,11 @@ public class TelegraphedAoeAttack implements BossAttack {
     }
 
     @Override
+    public AttackCategory getCategory() {
+        return AttackCategory.SLAM;
+    }
+
+    @Override
     public String getName() {
         return "AOE-Slam";
     }
