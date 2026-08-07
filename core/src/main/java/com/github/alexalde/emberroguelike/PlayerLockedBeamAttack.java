@@ -34,6 +34,7 @@ public class PlayerLockedBeamAttack implements BossAttack {
     private final float damagePerTick;
     private final float tickInterval;
     private final float cooldownDuration;
+    private final float baseWeight;
 
     private Vector2 origin;
     private Vector2 direction;
@@ -45,7 +46,7 @@ public class PlayerLockedBeamAttack implements BossAttack {
 
     public PlayerLockedBeamAttack(
         float triggerRange, float windupDuration, float activeDuration, float beamLength,
-        float beamWidth, float damagePerTick, float tickInterval, float cooldownDuration
+        float beamWidth, float damagePerTick, float tickInterval, float cooldownDuration, float baseWeight
     ) {
         this.triggerRange = triggerRange;
         this.windupDuration = windupDuration;
@@ -55,6 +56,7 @@ public class PlayerLockedBeamAttack implements BossAttack {
         this.damagePerTick = damagePerTick;
         this.tickInterval = tickInterval;
         this.cooldownDuration = cooldownDuration;
+        this.baseWeight = baseWeight;
     }
 
     @Override
@@ -130,8 +132,13 @@ public class PlayerLockedBeamAttack implements BossAttack {
     }
 
     @Override
-    public boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase) {
-        return phase == BossPhase.PHASE_TWO && origin.dst(player.getCenter()) <= triggerRange;
+    public boolean canTrigger(Vector2 origin, Player player, Room room) {
+        return origin.dst(player.getCenter()) <= triggerRange;
+    }
+
+    @Override
+    public float getBaseWeight() {
+        return baseWeight;
     }
 
     @Override

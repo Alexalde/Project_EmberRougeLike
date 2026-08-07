@@ -14,16 +14,18 @@ public class MeleeSlamAttack implements BossAttack {
     private final float windupDuration;
     private final float damage;
     private final float cooldownDuration;
+    private final float baseWeight;
 
     private Vector2 origin;
     private float windupRemaining;
     private boolean finished;
 
-    public MeleeSlamAttack(float range, float windupDuration, float damage, float cooldownDuration) {
+    public MeleeSlamAttack(float range, float windupDuration, float damage, float cooldownDuration, float baseWeight) {
         this.range = range;
         this.windupDuration = windupDuration;
         this.damage = damage;
         this.cooldownDuration = cooldownDuration;
+        this.baseWeight = baseWeight;
     }
 
     @Override
@@ -68,8 +70,13 @@ public class MeleeSlamAttack implements BossAttack {
     }
 
     @Override
-    public boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase) {
+    public boolean canTrigger(Vector2 origin, Player player, Room room) {
         return origin.dst(player.getCenter()) <= range;
+    }
+
+    @Override
+    public float getBaseWeight() {
+        return baseWeight;
     }
 
     @Override
