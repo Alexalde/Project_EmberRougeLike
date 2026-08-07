@@ -25,8 +25,17 @@ public interface BossAttack {
     void draw(ShapeRenderer shapeRenderer);
 
     // Reine Abfrage, KEINE Seiteneffekte - der Pool ruft das potenziell für jedes Muster im
-    // selben Frame auf, bevor er sich für eines entscheidet (siehe BossAttackPool.pickTriggerable())
-    boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase);
+    // selben Frame auf, bevor er sich für eines entscheidet (siehe BossAttackPool.pickTriggerable()).
+    // Bewusst OHNE BossPhase-Parameter - Phasen-Zugehörigkeit ist seit dem Pity-Gewichtungs-Umbau
+    // (siehe BossAttackPool) reine Pool-Struktur (welcher Phase-Liste ein Muster überhaupt
+    // angehört), keine Prüfung mehr, die jede Implementierung einzeln duplizieren müsste. Hier
+    // geht es nur noch um situative Gates wie Reichweite.
+    boolean canTrigger(Vector2 origin, Player player, Room room);
+
+    // Soll-Anteil an der Zufallsauswahl innerhalb seiner Phase(n) (siehe BossAttackPool -
+    // Pity-Gewichtung: der tatsächlich verwendete Gewichtungswert wächst/schrumpft dynamisch,
+    // dieser hier ist nur der statische Ausgangs-/Rückfallwert)
+    float getBaseWeight();
 
     // Cooldown, der nach isFinished() greift, bevor der Boss das NÄCHSTE Muster auslösen darf
     float getCooldownAfterFinish();

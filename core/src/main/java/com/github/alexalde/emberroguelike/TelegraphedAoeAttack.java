@@ -16,17 +16,19 @@ public class TelegraphedAoeAttack implements BossAttack {
     private final float slamRadius;
     private final float damage;
     private final float cooldownDuration;
+    private final float baseWeight;
 
     private Vector2 origin;
     private float windupRemaining;
     private boolean finished;
 
-    public TelegraphedAoeAttack(float triggerRange, float windupDuration, float slamRadius, float damage, float cooldownDuration) {
+    public TelegraphedAoeAttack(float triggerRange, float windupDuration, float slamRadius, float damage, float cooldownDuration, float baseWeight) {
         this.triggerRange = triggerRange;
         this.windupDuration = windupDuration;
         this.slamRadius = slamRadius;
         this.damage = damage;
         this.cooldownDuration = cooldownDuration;
+        this.baseWeight = baseWeight;
     }
 
     @Override
@@ -69,8 +71,15 @@ public class TelegraphedAoeAttack implements BossAttack {
     }
 
     @Override
-    public boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase) {
-        return phase == BossPhase.PHASE_TWO && origin.dst(player.getCenter()) <= triggerRange;
+    public boolean canTrigger(Vector2 origin, Player player, Room room) {
+        // Phasen-Zugehörigkeit ist jetzt Pool-Struktur (siehe BossAttackPool) - hier nur noch
+        // die situative Reichweiten-Prüfung
+        return origin.dst(player.getCenter()) <= triggerRange;
+    }
+
+    @Override
+    public float getBaseWeight() {
+        return baseWeight;
     }
 
     @Override

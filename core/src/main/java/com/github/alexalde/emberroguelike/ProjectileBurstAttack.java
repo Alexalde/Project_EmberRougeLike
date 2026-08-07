@@ -29,8 +29,8 @@ public class ProjectileBurstAttack implements BossAttack {
     private final float projectileHitboxRadius;
     private final float windupDuration;
     private final float triggerRange;
-    private final boolean requiresPhaseTwo;
     private final float cooldownDuration;
+    private final float baseWeight;
 
     private Vector2 origin;
     private Vector2 baseDirection;
@@ -42,7 +42,7 @@ public class ProjectileBurstAttack implements BossAttack {
     public ProjectileBurstAttack(
         String name, int projectileCount, float spreadAngleDegrees, boolean aimedAtPlayer,
         float projectileSpeed, float projectileDamage, float projectileRange, float projectileHitboxRadius,
-        float windupDuration, float triggerRange, boolean requiresPhaseTwo, float cooldownDuration
+        float windupDuration, float triggerRange, float cooldownDuration, float baseWeight
     ) {
         // Eine NICHT gezielte, aber schmale Fächerrichtung wäre willkürlich (der Boss ist ein
         // reiner Platzhalter-Kreis ohne eigene Blickrichtung) - bei einem vollen 360°-Burst
@@ -62,8 +62,8 @@ public class ProjectileBurstAttack implements BossAttack {
         this.projectileHitboxRadius = projectileHitboxRadius;
         this.windupDuration = windupDuration;
         this.triggerRange = triggerRange;
-        this.requiresPhaseTwo = requiresPhaseTwo;
         this.cooldownDuration = cooldownDuration;
+        this.baseWeight = baseWeight;
     }
 
     @Override
@@ -142,8 +142,13 @@ public class ProjectileBurstAttack implements BossAttack {
     }
 
     @Override
-    public boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase) {
-        return (!requiresPhaseTwo || phase == BossPhase.PHASE_TWO) && origin.dst(player.getCenter()) <= triggerRange;
+    public boolean canTrigger(Vector2 origin, Player player, Room room) {
+        return origin.dst(player.getCenter()) <= triggerRange;
+    }
+
+    @Override
+    public float getBaseWeight() {
+        return baseWeight;
     }
 
     @Override

@@ -25,6 +25,7 @@ public class RoomLockedBeamAttack implements BossAttack {
     private final float damagePerTick;
     private final float tickInterval;
     private final float cooldownDuration;
+    private final float baseWeight;
 
     // Die beim Windup-Start eingefrorene Y- (horizontal) bzw. X-Koordinate (vertikal)
     private float fixedCoordinate;
@@ -37,7 +38,7 @@ public class RoomLockedBeamAttack implements BossAttack {
 
     public RoomLockedBeamAttack(
         boolean horizontal, float windupDuration, float activeDuration, float beamWidth,
-        float damagePerTick, float tickInterval, float cooldownDuration
+        float damagePerTick, float tickInterval, float cooldownDuration, float baseWeight
     ) {
         this.horizontal = horizontal;
         this.windupDuration = windupDuration;
@@ -46,6 +47,7 @@ public class RoomLockedBeamAttack implements BossAttack {
         this.damagePerTick = damagePerTick;
         this.tickInterval = tickInterval;
         this.cooldownDuration = cooldownDuration;
+        this.baseWeight = baseWeight;
     }
 
     @Override
@@ -121,8 +123,15 @@ public class RoomLockedBeamAttack implements BossAttack {
     }
 
     @Override
-    public boolean canTrigger(Vector2 origin, Player player, Room room, BossPhase phase) {
-        return phase == BossPhase.PHASE_TWO;
+    public boolean canTrigger(Vector2 origin, Player player, Room room) {
+        // Kein Reichweiten-Gate - ein raumspannender Angriff dreht sich nicht um Nähe. Phasen-
+        // Zugehörigkeit ist jetzt Pool-Struktur (siehe BossAttackPool), deshalb immer true.
+        return true;
+    }
+
+    @Override
+    public float getBaseWeight() {
+        return baseWeight;
     }
 
     @Override
