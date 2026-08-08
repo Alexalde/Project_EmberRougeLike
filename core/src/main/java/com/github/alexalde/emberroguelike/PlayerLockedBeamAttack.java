@@ -112,14 +112,13 @@ public class PlayerLockedBeamAttack implements BossAttack {
     public void draw(ShapeRenderer shapeRenderer) {
         Vector2 endpoint = origin.cpy().add(direction.cpy().scl(beamLength));
 
-        // Bewusst NICHT wie der Warnkreis in der LÄNGE wachsend - der Endpunkt ist die
-        // eigentliche Ausweich-Information (anders als beim Kreis, dessen Zentrum die ganze Zeit
-        // bekannt ist) und darf nicht erst spät sichtbar werden. Stattdessen von Anfang an in
-        // voller Länge sichtbar, nur Breite/Farbe wachsen mit dem Windup-Fortschritt.
+        // Bewusst NICHT wachsend in der LÄNGE - der Endpunkt ist die eigentliche Ausweich-
+        // Information und darf nicht erst spät sichtbar werden. Volle Länge von Anfang an
+        // sichtbar (Basisfarbe), Füllung von der Mitte nach beiden Seiten zeigt Windup-
+        // Fortschritt (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph)
         if (!activeStarted) {
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.rectLine(origin, endpoint, TELEGRAPH_WIDTH);
+            BossAttackTelegraph.drawFillingLineFromCenter(shapeRenderer, origin, endpoint, TELEGRAPH_WIDTH, progress);
         } else {
             shapeRenderer.setColor(Color.WHITE);
             shapeRenderer.rectLine(origin, endpoint, beamWidth);

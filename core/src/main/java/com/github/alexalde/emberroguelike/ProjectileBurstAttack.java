@@ -1,6 +1,5 @@
 package com.github.alexalde.emberroguelike;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -13,11 +12,6 @@ import java.util.List;
 // Einzelschuss, gezielten Fächer und nicht gezielten Radial-Burst über Konstruktor-Parameter ab
 // (siehe BossAttackPool für die konkreten Konfigurationen).
 public class ProjectileBurstAttack implements BossAttack {
-
-    // Kleiner, fixer Vorschau-Radius am Ursprung während des Windups - anders als bei
-    // Melee/AOE/Beam ist die "Trefferzone" hier nicht EIN Bereich, sondern viele einzelne,
-    // sich bewegende Projektile, ein einzelner wachsender Warnkreis wäre hier irreführend
-    private static final float WINDUP_INDICATOR_RADIUS = 12f;
 
     private final String name;
     private final int projectileCount;
@@ -34,6 +28,10 @@ public class ProjectileBurstAttack implements BossAttack {
 
     private Vector2 origin;
     private Vector2 baseDirection;
+    // Bereits bei start() berechnet statt erst beim Spawnen - wird sowohl für den Telegraph
+    // (draw() während des Windups, siehe Task #77) als auch für spawnProjectiles() gebraucht,
+    // beide sollen exakt dieselben Richtungen zeigen/benutzen
+    private List<Vector2> directions;
     private float windupRemaining;
     private boolean spawned;
     private List<HostileProjectile> activeProjectiles;
@@ -75,6 +73,7 @@ public class ProjectileBurstAttack implements BossAttack {
         } else {
             baseDirection.set(1f, 0f);
         }
+        this.directions = computeDirections();
         this.windupRemaining = windupDuration;
         this.spawned = false;
         this.activeProjectiles = new ArrayList<>();
@@ -108,10 +107,11 @@ public class ProjectileBurstAttack implements BossAttack {
 
     // Offene Fächer (spreadAngleDegrees < 360): Enden liegen exakt bei ±halber Fächerbreite.
     // Voller Radial-Burst (>= 360): kein doppeltes Projektil an der 0°/360°-Naht.
-    private void spawnProjectiles() {
+    private List<Vector2> computeDirections() {
+        List<Vector2> result = new ArrayList<>();
         if (projectileCount == 1) {
-            activeProjectiles.add(new HostileProjectile(origin, baseDirection, projectileSpeed, projectileDamage, projectileRange, projectileHitboxRadius));
-            return;
+            result.add(baseDirection.cpy());
+            return result;
         }
 
         boolean fullCircle = spreadAngleDegrees >= 360f;
@@ -119,7 +119,13 @@ public class ProjectileBurstAttack implements BossAttack {
         float startAngle = fullCircle ? 0f : -spreadAngleDegrees / 2f;
 
         for (int i = 0; i < projectileCount; i++) {
-            Vector2 direction = baseDirection.cpy().rotateDeg(startAngle + i * angleStep);
+            result.add(baseDirection.cpy().rotateDeg(startAngle + i * angleStep));
+        }
+        return result;
+    }
+
+    private void spawnProjectiles() {
+        for (Vector2 direction : directions) {
             activeProjectiles.add(new HostileProjectile(origin, direction, projectileSpeed, projectileDamage, projectileRange, projectileHitboxRadius));
         }
     }
@@ -132,9 +138,16 @@ public class ProjectileBurstAttack implements BossAttack {
     @Override
     public void draw(ShapeRenderer shapeRenderer) {
         if (!spawned) {
+            // Ein voller Korridor PRO Projektil-Richtung, statt nur eines einzelnen Kreises am
+            // Ursprung - zeigt Anzahl, Richtung UND echte Trefferbreite aller kommenden
+            // Projektile schon während des Windups. Volle Länge sofort sichtbar, Füllung vom
+            // Ursprung (Boss-Seite) zum Ende zeigt Windup-Fortschritt (Task #77)
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.circle(origin.x, origin.y, WINDUP_INDICATOR_RADIUS * progress);
+            float corridorWidth = projectileHitboxRadius * 2f;
+            for (Vector2 direction : directions) {
+                Vector2 endpoint = origin.cpy().add(direction.cpy().scl(projectileRange));
+                BossAttackTelegraph.drawFillingLineFromStart(shapeRenderer, origin, endpoint, corridorWidth, progress);
+            }
         }
         for (HostileProjectile projectile : activeProjectiles) {
             projectile.draw(shapeRenderer);

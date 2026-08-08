@@ -1,6 +1,5 @@
 package com.github.alexalde.emberroguelike;
 
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -65,9 +64,10 @@ public class TelegraphedAoeAttack implements BossAttack {
 
     @Override
     public void draw(ShapeRenderer shapeRenderer) {
+        // Volle Trefferzone sofort sichtbar, Füllung von innen nach außen zeigt Windup-
+        // Fortschritt (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph)
         float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-        shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-        shapeRenderer.circle(origin.x, origin.y, slamRadius * progress);
+        BossAttackTelegraph.drawFillingCircle(shapeRenderer, origin, slamRadius, progress);
     }
 
     @Override

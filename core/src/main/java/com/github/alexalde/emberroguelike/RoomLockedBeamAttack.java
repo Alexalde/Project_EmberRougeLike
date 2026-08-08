@@ -111,10 +111,12 @@ public class RoomLockedBeamAttack implements BossAttack {
             end = new Vector2(fixedCoordinate, room.getPixelHeight());
         }
 
+        // Volle Länge von Anfang an sichtbar (Basisfarbe), Füllung von der Mitte nach beiden
+        // Seiten zeigt Windup-Fortschritt (Nutzer-Entscheidung Task #77 - kein Boss-Ursprung
+        // vorhanden, siehe Klassenkommentar - deshalb Füllung von der Mitte statt von einer Seite)
         if (!activeStarted) {
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.rectLine(start, end, TELEGRAPH_WIDTH);
+            BossAttackTelegraph.drawFillingLineFromCenter(shapeRenderer, start, end, TELEGRAPH_WIDTH, progress);
         } else {
             shapeRenderer.setColor(Color.WHITE);
             shapeRenderer.rectLine(start, end, beamWidth);
