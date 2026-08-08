@@ -18,11 +18,6 @@ import com.badlogic.gdx.math.Vector2;
 // beim Aktivieren schon im Strahl steht, sofort getroffen wird (wie in echten Bullet-Hell-Spielen).
 public class PlayerLockedBeamAttack implements BossAttack {
 
-    // Nur der eigentliche Trefferbereich (HURTBOX_RADIUS-Äquivalent für den Spieler) - Player
-    // selbst hat bewusst keine zentrale Hurtbox-Konstante (siehe Damageable-Kommentar), jede
-    // Angriffsklasse legt ihre eigene fest, gleiches Prinzip wie Enemy/Boss je ihre eigene
-    // HURTBOX_RADIUS haben statt einer zentralen.
-    private static final float PLAYER_HIT_RADIUS = 20f;
     // Dünne Vorschau-Linie während des Windups, unabhängig von der tatsächlichen Strahlbreite
     private static final float TELEGRAPH_WIDTH = 4f;
 
@@ -94,7 +89,7 @@ public class PlayerLockedBeamAttack implements BossAttack {
         if (tickTimer <= 0) {
             Vector2 endpoint = origin.cpy().add(direction.cpy().scl(beamLength));
             float distance = Intersector.distanceSegmentPoint(origin, endpoint, player.getCenter());
-            if (distance <= beamWidth / 2f + PLAYER_HIT_RADIUS) {
+            if (distance <= beamWidth / 2f + player.getHurtboxRadius()) {
                 if (DebugSettings.logDamage) {
                     System.out.println("Boss trifft mit " + getName() + "!");
                 }

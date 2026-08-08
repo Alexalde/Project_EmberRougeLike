@@ -26,6 +26,15 @@ public class Player {
     private static final int SPRITE_WIDTH = 48;
     private static final int SPRITE_HEIGHT = 48;
 
+    // Zentrale Trefferzone gegen Boss-/Enemy-Angriffe (siehe BossAttack-Klassen) - bewusst DEUTLICH
+    // kleiner als das Sprite, nicht "halbe Sprite-Breite" wie bei Enemy.HURTBOX_RADIUS/
+    // Boss.HURTBOX_RADIUS. Jene Konvention macht Gegner GROSSZÜGIG treffbar (gut für den Spieler-
+    // Waffen-Feeling), hier ist das Ziel das GEGENTEIL: enges, faires "Grazing" im Bullet-Hell-Stil
+    // (Touhou/Calamity Infernum) statt eines Trefferkreises, der fast die ganze Sprite-Fläche
+    // abdeckt. Vorher lokal und unabhängig in HostileProjectile/PlayerLockedBeamAttack/
+    // RoomLockedBeamAttack dupliziert (jeweils 20f) - jetzt eine einzige Quelle der Wahrheit.
+    private static final float HURTBOX_RADIUS = 8f;
+
     // Terrain-Kollisionsbox (Sidequest 1), relativ zur Zeichenposition (position.x/y = untere
     // linke Ecke des Sprites) - aus dem "Hitbox"-Tag im Spritesheet abgeleitet (siehe
     // AsepriteSpriteSheet.getHitboxBounds()). Solange dieser Tag noch nicht gezeichnet ist,
@@ -571,9 +580,22 @@ public class Player {
         bow.draw(batch);
     }
 
+    public float getHurtboxRadius() {
+        return HURTBOX_RADIUS;
+    }
+
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
         sword.drawHitboxDebug(shapeRenderer, getCenter());
         bow.drawHitboxDebug(shapeRenderer);
+    }
+
+    // Gleiche GRÜN-Konvention wie Enemy.HURTBOX_RADIUS/Boss.HURTBOX_RADIUS (dort: "hier trifft
+    // der Spieler DICH", hier: "hier trifft DICH ein Boss-/Enemy-Angriff") - erwartet ein
+    // laufendes ShapeRenderer.begin(ShapeType.Line) (siehe DebugSettings.renderHitboxes)
+    public void drawHurtboxDebug(ShapeRenderer shapeRenderer) {
+        Vector2 center = getCenter();
+        shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.circle(center.x, center.y, HURTBOX_RADIUS);
     }
 
     // Zeigt die tatsächlich für Terrain-Kollision genutzte Box (Sidequest 1) - als Kontur, damit
