@@ -713,6 +713,7 @@ public class Main extends ApplicationAdapter {
             // auch gleich die Terrain-Kollisionsbox von Player + Enemy (Sidequest 1, gelb).
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
             player.drawTerrainCollisionDebug(shapeRenderer);
+            player.drawHurtboxDebug(shapeRenderer);
             for (Enemy enemy : enemies) {
                 enemy.drawHitboxDebug(shapeRenderer);
                 enemy.drawTerrainCollisionDebug(shapeRenderer);

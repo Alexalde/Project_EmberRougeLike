@@ -15,7 +15,6 @@ import com.badlogic.gdx.math.Vector2;
 // Reichweiten-Gate in canTrigger() (nur Phase).
 public class RoomLockedBeamAttack implements BossAttack {
 
-    private static final float PLAYER_HIT_RADIUS = 20f;
     private static final float TELEGRAPH_WIDTH = 4f;
 
     private final boolean horizontal;
@@ -81,7 +80,7 @@ public class RoomLockedBeamAttack implements BossAttack {
             // Der Balken deckt per Definition die GESAMTE andere Achse ab (volle Raumbreite/
             // -höhe) - ein reiner 1D-Abstand auf der Quer-Achse reicht als Treffer-Check
             float playerCoordinate = horizontal ? player.getCenter().y : player.getCenter().x;
-            if (Math.abs(playerCoordinate - fixedCoordinate) <= beamWidth / 2f + PLAYER_HIT_RADIUS) {
+            if (Math.abs(playerCoordinate - fixedCoordinate) <= beamWidth / 2f + player.getHurtboxRadius()) {
                 if (DebugSettings.logDamage) {
                     System.out.println("Boss trifft mit " + getName() + "!");
                 }

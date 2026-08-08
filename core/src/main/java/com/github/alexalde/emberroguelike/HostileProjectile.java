@@ -12,10 +12,6 @@ import com.badlogic.gdx.math.Vector2;
 // dispose() nötig) und keine Terrain-Kollision (wie schon bei der bestehenden Projectile-Klasse).
 public class HostileProjectile {
 
-    // Siehe PlayerLockedBeamAttack - Player hat bewusst keine zentrale Hurtbox-Konstante, jede
-    // Angriffsklasse legt ihre eigene fest
-    private static final float PLAYER_HIT_RADIUS = 20f;
-
     private final Vector2 position;
     private final Vector2 direction;
     private final float speed;
@@ -45,7 +41,7 @@ public class HostileProjectile {
         position.y += direction.y * step;
         distanceTraveled += step;
 
-        if (player.getCenter().dst(position) <= hitboxRadius + PLAYER_HIT_RADIUS) {
+        if (player.getCenter().dst(position) <= hitboxRadius + player.getHurtboxRadius()) {
             if (DebugSettings.logDamage) {
                 System.out.println("Boss-Projektil trifft!");
             }
