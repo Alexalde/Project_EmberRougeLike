@@ -85,6 +85,11 @@ public class MeleeSlamAttack implements BossAttack {
     }
 
     @Override
+    public AttackCategory getCategory() {
+        return AttackCategory.SLAM;
+    }
+
+    @Override
     public String getName() {
         return "Nahkampf-Schlag";
     }

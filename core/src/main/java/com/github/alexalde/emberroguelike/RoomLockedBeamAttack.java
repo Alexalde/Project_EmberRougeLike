@@ -140,6 +140,11 @@ public class RoomLockedBeamAttack implements BossAttack {
     }
 
     @Override
+    public AttackCategory getCategory() {
+        return AttackCategory.BEAM;
+    }
+
+    @Override
     public String getName() {
         return horizontal ? "Raum-Beam (horizontal)" : "Raum-Beam (vertikal)";
     }

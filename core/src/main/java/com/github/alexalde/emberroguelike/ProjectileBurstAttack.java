@@ -157,6 +157,11 @@ public class ProjectileBurstAttack implements BossAttack {
     }
 
     @Override
+    public AttackCategory getCategory() {
+        return AttackCategory.PROJECTILE;
+    }
+
+    @Override
     public String getName() {
         return name;
     }
