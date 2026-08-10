@@ -110,15 +110,12 @@ public class PlayerLockedBeamAttack implements BossAttack {
         Vector2 endpoint = origin.cpy().add(direction.cpy().scl(beamLength));
 
         // Bewusst NICHT wachsend in der LÄNGE - der Endpunkt ist die eigentliche Ausweich-
-        // Information und darf nicht erst spät sichtbar werden. Volle Länge von Anfang an
-        // sichtbar (Basisfarbe), Füllung von der Mitte nach beiden Seiten zeigt Windup-
-        // Fortschritt (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph). Breite ist
-        // bewusst schon im Windup die ECHTE beamWidth (Nutzer-Feedback) - anders als beim
-        // Projektil-Burst lohnt sich hier die exakte Vorschau, weil der Strahl ein einzelner,
-        // stehender Gefahrenbereich ist statt vieler kleiner beweglicher Punkte
+        // Information und darf nicht erst spät sichtbar werden. Volle Länge UND volle echte
+        // beamWidth von Anfang an sichtbar (Basisfarbe), Füllung wächst stattdessen in der
+        // BREITE (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph)
         if (!activeStarted) {
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            BossAttackTelegraph.drawFillingLineFromCenter(shapeRenderer, origin, endpoint, beamWidth, progress);
+            BossAttackTelegraph.drawFillingLineWidth(shapeRenderer, origin, endpoint, beamWidth, progress);
         } else {
             shapeRenderer.setColor(Color.WHITE);
             shapeRenderer.rectLine(origin, endpoint, beamWidth);
