@@ -18,9 +18,6 @@ import com.badlogic.gdx.math.Vector2;
 // beim Aktivieren schon im Strahl steht, sofort getroffen wird (wie in echten Bullet-Hell-Spielen).
 public class PlayerLockedBeamAttack implements BossAttack {
 
-    // Dünne Vorschau-Linie während des Windups, unabhängig von der tatsächlichen Strahlbreite
-    private static final float TELEGRAPH_WIDTH = 4f;
-
     private final float triggerRange;
     private final float windupDuration;
     private final float activeDuration;
@@ -115,10 +112,13 @@ public class PlayerLockedBeamAttack implements BossAttack {
         // Bewusst NICHT wachsend in der LÄNGE - der Endpunkt ist die eigentliche Ausweich-
         // Information und darf nicht erst spät sichtbar werden. Volle Länge von Anfang an
         // sichtbar (Basisfarbe), Füllung von der Mitte nach beiden Seiten zeigt Windup-
-        // Fortschritt (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph)
+        // Fortschritt (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph). Breite ist
+        // bewusst schon im Windup die ECHTE beamWidth (Nutzer-Feedback) - anders als beim
+        // Projektil-Burst lohnt sich hier die exakte Vorschau, weil der Strahl ein einzelner,
+        // stehender Gefahrenbereich ist statt vieler kleiner beweglicher Punkte
         if (!activeStarted) {
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            BossAttackTelegraph.drawFillingLineFromCenter(shapeRenderer, origin, endpoint, TELEGRAPH_WIDTH, progress);
+            BossAttackTelegraph.drawFillingLineFromCenter(shapeRenderer, origin, endpoint, beamWidth, progress);
         } else {
             shapeRenderer.setColor(Color.WHITE);
             shapeRenderer.rectLine(origin, endpoint, beamWidth);

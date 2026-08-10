@@ -13,6 +13,11 @@ import java.util.List;
 // (siehe BossAttackPool für die konkreten Konfigurationen).
 public class ProjectileBurstAttack implements BossAttack {
 
+    // Bewusst NICHT die echte projectileHitboxRadius*2 (Nutzer-Feedback) - anders als beim Beam
+    // ist das hier kein einzelner stehender Gefahrenbereich, sondern viele kleine bewegliche
+    // Punkte, eine exakt breite Korridor-Vorschau pro Richtung wäre optisch überladen/irreführend
+    private static final float TELEGRAPH_WIDTH = 4f;
+
     private final String name;
     private final int projectileCount;
     private final float spreadAngleDegrees;
@@ -139,14 +144,14 @@ public class ProjectileBurstAttack implements BossAttack {
     public void draw(ShapeRenderer shapeRenderer) {
         if (!spawned) {
             // Ein voller Korridor PRO Projektil-Richtung, statt nur eines einzelnen Kreises am
-            // Ursprung - zeigt Anzahl, Richtung UND echte Trefferbreite aller kommenden
-            // Projektile schon während des Windups. Volle Länge sofort sichtbar, Füllung vom
-            // Ursprung (Boss-Seite) zum Ende zeigt Windup-Fortschritt (Task #77)
+            // Ursprung - zeigt Anzahl und Richtung aller kommenden Projektile schon während des
+            // Windups. Volle Länge sofort sichtbar, Füllung vom Ursprung (Boss-Seite) zum Ende
+            // zeigt Windup-Fortschritt (Task #77). Breite bewusst NICHT die echte Trefferbreite
+            // (siehe TELEGRAPH_WIDTH)
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            float corridorWidth = projectileHitboxRadius * 2f;
             for (Vector2 direction : directions) {
                 Vector2 endpoint = origin.cpy().add(direction.cpy().scl(projectileRange));
-                BossAttackTelegraph.drawFillingLineFromStart(shapeRenderer, origin, endpoint, corridorWidth, progress);
+                BossAttackTelegraph.drawFillingLineFromStart(shapeRenderer, origin, endpoint, TELEGRAPH_WIDTH, progress);
             }
         }
         for (HostileProjectile projectile : activeProjectiles) {
