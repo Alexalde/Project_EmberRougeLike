@@ -29,6 +29,8 @@ public class GameSettings {
 
     public static int debugMenuToggleKey = DefaultSettings.DEBUG_MENU_TOGGLE_KEY;
 
+    public static int pauseMenuToggleKey = DefaultSettings.PAUSE_MENU_TOGGLE_KEY;
+
     public static int bossDebugSpawnKey = DefaultSettings.DEBUG_BOSS_SPAWN_KEY;
 
     public static void resetToDefaults() {
@@ -58,6 +60,8 @@ public class GameSettings {
         interactKey = DefaultSettings.INTERACT_KEY;
 
         debugMenuToggleKey = DefaultSettings.DEBUG_MENU_TOGGLE_KEY;
+
+        pauseMenuToggleKey = DefaultSettings.PAUSE_MENU_TOGGLE_KEY;
 
         bossDebugSpawnKey = DefaultSettings.DEBUG_BOSS_SPAWN_KEY;
     }
