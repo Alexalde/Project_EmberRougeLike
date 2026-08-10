@@ -32,6 +32,6 @@ public class MaxHealthUpgrade implements PermanentUpgrade {
 
     @Override
     public void apply(Player player) {
-        player.increaseMaxHealth(healthAmount);
+        player.increaseMaxHealthAndHeal(healthAmount);
     }
 }
