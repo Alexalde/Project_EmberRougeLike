@@ -105,6 +105,11 @@ public class Main extends ApplicationAdapter {
     private List<DebugValue> debugValues;
     private DebugMenuUI activeDebugMenu;
 
+    // Pause-Menü während eines laufenden Runs (siehe PauseMenuUI, Task #62) - null, solange
+    // geschlossen. Nur öffnenbar während echtem laufenden Gameplay (siehe render()), aber
+    // jederzeit wieder schließbar, solange offen.
+    private PauseMenuUI activePauseMenu;
+
     private Texture mouseDebugTexture;
 
     @Override
@@ -357,6 +362,19 @@ public class Main extends ApplicationAdapter {
                 : null;
         }
 
+        // Öffnet/schließt das Pause-Menü (siehe PauseMenuUI, Task #62) - anders als der Debug-
+        // Toggle oben NICHT unconditional: nur öffnenbar, solange kein anderes Overlay bereits
+        // läuft und kein Game Over aktiv ist (sonst wäre "pausieren" während einer Beute-/Shop-
+        // Auswahl bedeutungslos, die pausiert das Gameplay ja bereits). Schließen geht dagegen
+        // immer, solange es offen ist.
+        if (Gdx.input.isKeyJustPressed(GameSettings.pauseMenuToggleKey)) {
+            if (activePauseMenu != null) {
+                activePauseMenu = null;
+            } else if (activeDebugMenu == null && activeReward == null && activeShop == null && !gameOver) {
+                activePauseMenu = new PauseMenuUI();
+            }
+        }
+
         // Debug-Werkzeug (siehe GameSettings.bossDebugSpawnKey, Quest 10.3) - spawnt einen Boss
         // ohne Tiled-Änderung, bleibt auch nach der echten BossSpawn-Integration (Quest 10.7)
         // bestehen. Nur EIN Boss gleichzeitig, kein Effekt wenn schon einer da ist.
@@ -415,6 +433,18 @@ public class Main extends ApplicationAdapter {
 
             if (activeShop.isCloseRequested()) {
                 activeShop = null;
+            }
+        } else if (activePauseMenu != null) {
+            activePauseMenu.update(getUiMousePosition());
+
+            // "Run aufgeben" zuerst geprüft - startGame() setzt ohnehin schon alles zurück
+            // (siehe dortiger Kommentar, identisch zum Tod-Reset), das Schließen des Menüs
+            // danach ist da nur noch ein Nachklapp, kein zusätzlicher Zustand
+            if (activePauseMenu.consumeGiveUpRequest()) {
+                startGame();
+                activePauseMenu = null;
+            } else if (activePauseMenu.isCloseRequested()) {
+                activePauseMenu = null;
             }
         } else if (!gameOver) {
             // Player.update() braucht List<Damageable> (siehe Quest 10) statt List<Enemy> direkt -
@@ -691,6 +721,20 @@ public class Main extends ApplicationAdapter {
             batch.setProjectionMatrix(uiCamera.combined);
             batch.begin();
             activeShop.renderText(batch, uiFont);
+            batch.end();
+        }
+
+        // Pause-Menü (siehe PauseMenuUI, Task #62) - gleiches zweigeteiltes Render-Muster wie
+        // activeReward/activeShop oben
+        if (activePauseMenu != null) {
+            shapeRenderer.setProjectionMatrix(uiCamera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            activePauseMenu.renderShapes(shapeRenderer);
+            shapeRenderer.end();
+
+            batch.setProjectionMatrix(uiCamera.combined);
+            batch.begin();
+            activePauseMenu.renderText(batch, uiFont);
             batch.end();
         }
 

@@ -40,6 +40,11 @@ public class DefaultSettings {
     // Öffnet/schließt das Debug-Menü (siehe DebugMenuUI) - bisher unbenutzte Taste
     public static final int DEBUG_MENU_TOGGLE_KEY = Input.Keys.F1;
 
+    // Öffnet/schließt das Pause-Menü (siehe PauseMenuUI, Task #62) - Standard-Konvention für
+    // Pause-Menüs, bisher unbenutzte Taste auf globaler Ebene (DebugMenuUI/UpgradeShopUI nutzen
+    // Escape nur INTERN zum Selbst-Schließen, keine Kollision mit diesem globalen Toggle)
+    public static final int PAUSE_MENU_TOGGLE_KEY = Input.Keys.ESCAPE;
+
     // Spawnt einen Boss neben dem Spieler im aktuellen Raum (siehe GDD 6/Quest 10) - erlaubt
     // Testen ohne Tiled-Änderung, bleibt dauerhaft als Debug-Werkzeug bestehen (auch in Räumen
     // ohne echten BossSpawn-Objekt nützlich)
