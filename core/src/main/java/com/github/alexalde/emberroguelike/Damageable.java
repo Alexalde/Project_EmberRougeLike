@@ -8,10 +8,14 @@ import com.badlogic.gdx.math.Vector2;
 // Enemy-/Boss-spezifisch, kein Waffen-Anliegen. Enemy implementiert dieses Interface bereits mit
 // unveränderten Methodenkörpern (reiner Compile-Zeit-Vertrag); Boss (Quest 10) ist der zweite
 // Implementierer, ohne von Enemy zu erben.
+//
+// isHitByArc()/isHitBy() sind seit der Shape-Abstraktion (Task #85) entfallen - die Trefferzone
+// (Kreis/Kegel/Linie) baut jetzt der ANGREIFER als Shape und testet sie selbst gegen
+// getCenter()/getHurtboxRadius(), statt dass jede Damageable-Implementierung ihre eigene
+// Geometrie-Mathematik dupliziert (gleiches Prinzip wie Player.getHurtboxRadius(), Task #83).
 public interface Damageable {
     boolean isAlive();
     void takeDamage(float amount);
     Vector2 getCenter();
-    boolean isHitByArc(Vector2 origin, Vector2 direction, float range, float halfAngleDegrees);
-    boolean isHitBy(Vector2 point, float otherRadius);
+    float getHurtboxRadius();
 }

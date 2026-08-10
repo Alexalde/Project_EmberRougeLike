@@ -51,9 +51,11 @@ public class Sword implements Weapon {
         attackVisualTimeRemaining = attackVisualDuration;
 
         // Ein Kegel-Schwung trifft ALLE Gegner darin gleichzeitig, nicht nur einen - jeder
-        // getroffene Gegner bekommt einen EIGENEN Crit-Roll (siehe PlayerStats.computeDamage())
+        // getroffene Gegner bekommt einen EIGENEN Crit-Roll (siehe PlayerStats.computeDamage()).
+        // Trefferzone als Shape (siehe Task #85) statt Damageable.isHitByArc()
+        Shape swingShape = new ArcShape(origin, direction, range, halfConeAngleDegrees);
         for (Damageable target : targets) {
-            if (target.isAlive() && target.isHitByArc(origin, direction, range, halfConeAngleDegrees)) {
+            if (target.isAlive() && swingShape.overlapsCircle(target.getCenter(), target.getHurtboxRadius())) {
                 target.takeDamage(stats.computeDamage(damage, DamageType.PHYSICAL));
             }
         }

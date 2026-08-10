@@ -45,11 +45,13 @@ public class Projectile {
         position.y += direction.y * step;
         distanceTraveled += step;
 
+        // Trefferzone als Shape (siehe Task #85) statt Damageable.isHitBy()
+        Shape hitShape = new CircleShape(position, hitboxRadius);
         for (Damageable target : targets) {
             if (hitsRemaining <= 0) {
                 break;
             }
-            if (target.isAlive() && target.isHitBy(position, hitboxRadius)) {
+            if (target.isAlive() && hitShape.overlapsCircle(target.getCenter(), target.getHurtboxRadius())) {
                 target.takeDamage(damage);
                 hitsRemaining--;
             }

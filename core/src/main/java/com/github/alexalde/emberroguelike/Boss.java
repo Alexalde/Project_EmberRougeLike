@@ -198,26 +198,11 @@ public class Boss implements Damageable {
         return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
     }
 
+    // Siehe Damageable-Klassenkommentar - der Angreifer baut die Trefferzone selbst als Shape
+    // und testet sie gegen diesen Radius, statt dass Boss die Geometrie kennen muss
     @Override
-    public boolean isHitByArc(Vector2 origin, Vector2 direction, float range, float halfAngleDegrees) {
-        Vector2 toThis = getCenter().sub(origin);
-        float distance = toThis.len();
-
-        if (distance > range + HURTBOX_RADIUS) {
-            return false;
-        }
-        if (distance == 0) {
-            return true;
-        }
-
-        toThis.nor();
-        float minDot = (float) Math.cos(Math.toRadians(halfAngleDegrees));
-        return direction.dot(toThis) >= minDot;
-    }
-
-    @Override
-    public boolean isHitBy(Vector2 point, float otherRadius) {
-        return getCenter().dst(point) <= HURTBOX_RADIUS + otherRadius;
+    public float getHurtboxRadius() {
+        return HURTBOX_RADIUS;
     }
 
     // Reiner ShapeRenderer-Platzhalter (siehe Klassenkommentar) - kurzer heller Blitz bei

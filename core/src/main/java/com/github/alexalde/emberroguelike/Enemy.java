@@ -329,27 +329,10 @@ public class Enemy implements Damageable {
         return frameTexture;
     }
 
-    // Reichweiten- und Kegel-Check: Ist dieser Gegner innerhalb "range" und ungefähr in "direction"?
-    public boolean isHitByArc(Vector2 origin, Vector2 direction, float range, float halfAngleDegrees) {
-        Vector2 toThis = getCenter().sub(origin);
-        float distance = toThis.len();
-
-        if (distance > range + HURTBOX_RADIUS) {
-            return false;
-        }
-        if (distance == 0) {
-            return true;
-        }
-
-        toThis.nor();
-        float minDot = (float) Math.cos(Math.toRadians(halfAngleDegrees));
-        return direction.dot(toThis) >= minDot;
-    }
-
-    // Kreis-Kreis-Check: Abstand der Mittelpunkte gegen die SUMME beider Radien,
-    // damit auch größere Projektile eine passend große Hitbox haben (nicht nur ein Punkt)
-    public boolean isHitBy(Vector2 point, float otherRadius) {
-        return getCenter().dst(point) <= HURTBOX_RADIUS + otherRadius;
+    // Siehe Damageable-Klassenkommentar - der Angreifer baut die Trefferzone selbst als Shape
+    // und testet sie gegen diesen Radius, statt dass Enemy die Geometrie kennen muss
+    public float getHurtboxRadius() {
+        return HURTBOX_RADIUS;
     }
 
     public void draw(SpriteBatch batch) {
