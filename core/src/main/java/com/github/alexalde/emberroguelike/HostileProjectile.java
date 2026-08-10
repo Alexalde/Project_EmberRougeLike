@@ -41,7 +41,9 @@ public class HostileProjectile {
         position.y += direction.y * step;
         distanceTraveled += step;
 
-        if (player.getCenter().dst(position) <= hitboxRadius + player.getHurtboxRadius()) {
+        // Trefferzone als Shape (siehe Task #85)
+        Shape hitShape = new CircleShape(position, hitboxRadius);
+        if (hitShape.overlapsCircle(player.getCenter(), player.getHurtboxRadius())) {
             if (DebugSettings.logDamage) {
                 System.out.println("Boss-Projektil trifft!");
             }

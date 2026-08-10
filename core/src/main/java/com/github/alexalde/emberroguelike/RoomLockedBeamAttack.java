@@ -75,10 +75,12 @@ public class RoomLockedBeamAttack implements BossAttack {
         activeRemaining -= deltaTime;
         tickTimer -= deltaTime;
         if (tickTimer <= 0) {
-            // Der Balken deckt per Definition die GESAMTE andere Achse ab (volle Raumbreite/
-            // -höhe) - ein reiner 1D-Abstand auf der Quer-Achse reicht als Treffer-Check
-            float playerCoordinate = horizontal ? player.getCenter().y : player.getCenter().x;
-            if (Math.abs(playerCoordinate - fixedCoordinate) <= beamWidth / 2f + player.getHurtboxRadius()) {
+            // Trefferzone als Shape (siehe Task #85) - LineShape mit Intersector.
+            // distanceSegmentPoint deckt den raumspannenden Fall korrekt ab (siehe LineShape-
+            // Klassenkommentar), kein separater 1D-Achsen-Check mehr nötig
+            Vector2[] endpoints = getLineEndpoints();
+            Shape hitShape = new LineShape(endpoints[0], endpoints[1], beamWidth);
+            if (hitShape.overlapsCircle(player.getCenter(), player.getHurtboxRadius())) {
                 if (DebugSettings.logDamage) {
                     System.out.println("Boss trifft mit " + getName() + "!");
                 }
@@ -97,17 +99,20 @@ public class RoomLockedBeamAttack implements BossAttack {
         return finished;
     }
 
+    // Gemeinsam von update() (Treffer-Check) und draw() (Telegraph/aktiver Strahl) genutzt -
+    // beide brauchen dieselben zwei Punkte, die die volle Raumbreite/-höhe abdecken
+    private Vector2[] getLineEndpoints() {
+        if (horizontal) {
+            return new Vector2[] { new Vector2(0f, fixedCoordinate), new Vector2(room.getPixelWidth(), fixedCoordinate) };
+        }
+        return new Vector2[] { new Vector2(fixedCoordinate, 0f), new Vector2(fixedCoordinate, room.getPixelHeight()) };
+    }
+
     @Override
     public void draw(ShapeRenderer shapeRenderer) {
-        Vector2 start;
-        Vector2 end;
-        if (horizontal) {
-            start = new Vector2(0f, fixedCoordinate);
-            end = new Vector2(room.getPixelWidth(), fixedCoordinate);
-        } else {
-            start = new Vector2(fixedCoordinate, 0f);
-            end = new Vector2(fixedCoordinate, room.getPixelHeight());
-        }
+        Vector2[] endpoints = getLineEndpoints();
+        Vector2 start = endpoints[0];
+        Vector2 end = endpoints[1];
 
         // Volle Länge UND volle echte beamWidth von Anfang an sichtbar (Basisfarbe), Füllung
         // wächst stattdessen in der BREITE (Nutzer-Entscheidung Task #77 - siehe

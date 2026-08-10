@@ -2,7 +2,6 @@ package com.github.alexalde.emberroguelike;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
@@ -84,9 +83,10 @@ public class PlayerLockedBeamAttack implements BossAttack {
         activeRemaining -= deltaTime;
         tickTimer -= deltaTime;
         if (tickTimer <= 0) {
+            // Trefferzone als Shape (siehe Task #85)
             Vector2 endpoint = origin.cpy().add(direction.cpy().scl(beamLength));
-            float distance = Intersector.distanceSegmentPoint(origin, endpoint, player.getCenter());
-            if (distance <= beamWidth / 2f + player.getHurtboxRadius()) {
+            Shape hitShape = new LineShape(origin, endpoint, beamWidth);
+            if (hitShape.overlapsCircle(player.getCenter(), player.getHurtboxRadius())) {
                 if (DebugSettings.logDamage) {
                     System.out.println("Boss trifft mit " + getName() + "!");
                 }

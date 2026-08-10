@@ -57,7 +57,9 @@ public class MeleeSlamAttack implements BossAttack {
         if (!impactResolved) {
             windupRemaining -= deltaTime;
             if (windupRemaining <= 0) {
-                if (origin.dst(player.getCenter()) <= range) {
+                // Trefferzone als Shape (siehe Task #85)
+                Shape hitShape = new CircleShape(origin, range);
+                if (hitShape.overlapsCircle(player.getCenter(), player.getHurtboxRadius())) {
                     if (DebugSettings.logDamage) {
                         System.out.println("Boss trifft mit " + getName() + "!");
                     }
