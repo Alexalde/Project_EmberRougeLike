@@ -18,9 +18,6 @@ import com.badlogic.gdx.math.Vector2;
 // beim Aktivieren schon im Strahl steht, sofort getroffen wird (wie in echten Bullet-Hell-Spielen).
 public class PlayerLockedBeamAttack implements BossAttack {
 
-    // Dünne Vorschau-Linie während des Windups, unabhängig von der tatsächlichen Strahlbreite
-    private static final float TELEGRAPH_WIDTH = 4f;
-
     private final float triggerRange;
     private final float windupDuration;
     private final float activeDuration;
@@ -112,14 +109,13 @@ public class PlayerLockedBeamAttack implements BossAttack {
     public void draw(ShapeRenderer shapeRenderer) {
         Vector2 endpoint = origin.cpy().add(direction.cpy().scl(beamLength));
 
-        // Bewusst NICHT wie der Warnkreis in der LÄNGE wachsend - der Endpunkt ist die
-        // eigentliche Ausweich-Information (anders als beim Kreis, dessen Zentrum die ganze Zeit
-        // bekannt ist) und darf nicht erst spät sichtbar werden. Stattdessen von Anfang an in
-        // voller Länge sichtbar, nur Breite/Farbe wachsen mit dem Windup-Fortschritt.
+        // Bewusst NICHT wachsend in der LÄNGE - der Endpunkt ist die eigentliche Ausweich-
+        // Information und darf nicht erst spät sichtbar werden. Volle Länge UND volle echte
+        // beamWidth von Anfang an sichtbar (Basisfarbe), Füllung wächst stattdessen in der
+        // BREITE (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph)
         if (!activeStarted) {
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.rectLine(origin, endpoint, TELEGRAPH_WIDTH);
+            BossAttackTelegraph.drawFillingLineWidth(shapeRenderer, origin, endpoint, beamWidth, progress);
         } else {
             shapeRenderer.setColor(Color.WHITE);
             shapeRenderer.rectLine(origin, endpoint, beamWidth);

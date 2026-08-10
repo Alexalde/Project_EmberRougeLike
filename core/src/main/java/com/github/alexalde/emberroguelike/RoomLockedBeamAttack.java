@@ -15,8 +15,6 @@ import com.badlogic.gdx.math.Vector2;
 // Reichweiten-Gate in canTrigger() (nur Phase).
 public class RoomLockedBeamAttack implements BossAttack {
 
-    private static final float TELEGRAPH_WIDTH = 4f;
-
     private final boolean horizontal;
     private final float windupDuration;
     private final float activeDuration;
@@ -111,10 +109,12 @@ public class RoomLockedBeamAttack implements BossAttack {
             end = new Vector2(fixedCoordinate, room.getPixelHeight());
         }
 
+        // Volle Länge UND volle echte beamWidth von Anfang an sichtbar (Basisfarbe), Füllung
+        // wächst stattdessen in der BREITE (Nutzer-Entscheidung Task #77 - siehe
+        // BossAttackTelegraph/PlayerLockedBeamAttack)
         if (!activeStarted) {
             float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-            shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-            shapeRenderer.rectLine(start, end, TELEGRAPH_WIDTH);
+            BossAttackTelegraph.drawFillingLineWidth(shapeRenderer, start, end, beamWidth, progress);
         } else {
             shapeRenderer.setColor(Color.WHITE);
             shapeRenderer.rectLine(start, end, beamWidth);

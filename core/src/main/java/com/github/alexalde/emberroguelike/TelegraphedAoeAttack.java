@@ -11,6 +11,10 @@ import com.badlogic.gdx.math.Vector2;
 // (Quest 10.5) ins BossAttack-System (Quest 10.9) - Zahlenwerte unverändert.
 public class TelegraphedAoeAttack implements BossAttack {
 
+    // Siehe MeleeSlamAttack für die Begründung - kurzer weißer Impact-Blitz statt ersatzlosem
+    // Verschwinden im selben Frame, in dem der Schaden abgerechnet wird
+    private static final float IMPACT_FLASH_DURATION = 0.1f;
+
     private final float triggerRange;
     private final float windupDuration;
     private final float slamRadius;
@@ -20,6 +24,8 @@ public class TelegraphedAoeAttack implements BossAttack {
 
     private Vector2 origin;
     private float windupRemaining;
+    private boolean impactResolved;
+    private float impactFlashRemaining;
     private boolean finished;
 
     public TelegraphedAoeAttack(float triggerRange, float windupDuration, float slamRadius, float damage, float cooldownDuration, float baseWeight) {
@@ -38,6 +44,8 @@ public class TelegraphedAoeAttack implements BossAttack {
         // ausweichen"-Regel unmissverständlich
         this.origin = origin.cpy();
         this.windupRemaining = windupDuration;
+        this.impactResolved = false;
+        this.impactFlashRemaining = 0f;
         this.finished = false;
     }
 
@@ -46,14 +54,24 @@ public class TelegraphedAoeAttack implements BossAttack {
         if (finished) {
             return;
         }
-        windupRemaining -= deltaTime;
-        if (windupRemaining <= 0) {
-            if (origin.dst(player.getCenter()) <= slamRadius) {
-                if (DebugSettings.logDamage) {
-                    System.out.println("Boss trifft mit " + getName() + "!");
+
+        if (!impactResolved) {
+            windupRemaining -= deltaTime;
+            if (windupRemaining <= 0) {
+                if (origin.dst(player.getCenter()) <= slamRadius) {
+                    if (DebugSettings.logDamage) {
+                        System.out.println("Boss trifft mit " + getName() + "!");
+                    }
+                    player.takeDamage(damage);
                 }
-                player.takeDamage(damage);
+                impactResolved = true;
+                impactFlashRemaining = IMPACT_FLASH_DURATION;
             }
+            return;
+        }
+
+        impactFlashRemaining -= deltaTime;
+        if (impactFlashRemaining <= 0) {
             finished = true;
         }
     }
@@ -65,9 +83,15 @@ public class TelegraphedAoeAttack implements BossAttack {
 
     @Override
     public void draw(ShapeRenderer shapeRenderer) {
-        float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
-        shapeRenderer.setColor(new Color(Color.YELLOW).lerp(Color.RED, progress));
-        shapeRenderer.circle(origin.x, origin.y, slamRadius * progress);
+        if (!impactResolved) {
+            // Volle Trefferzone sofort sichtbar, Füllung von innen nach außen zeigt Windup-
+            // Fortschritt (Nutzer-Entscheidung Task #77 - siehe BossAttackTelegraph)
+            float progress = MathUtils.clamp(1f - (windupRemaining / windupDuration), 0f, 1f);
+            BossAttackTelegraph.drawFillingCircle(shapeRenderer, origin, slamRadius, progress);
+        } else {
+            shapeRenderer.setColor(Color.WHITE);
+            shapeRenderer.circle(origin.x, origin.y, slamRadius);
+        }
     }
 
     @Override
