@@ -360,11 +360,19 @@ public class Player {
         return maxHealth;
     }
 
-    // Für PermanentUpgrade (siehe GDD 3.2/Quest 9, z.B. MaxHealthUpgrade) - erhöht NUR maxHealth,
-    // nicht health direkt (wird aktuell ausschließlich im Konstruktor VOR "health = maxHealth"
-    // aufgerufen, siehe applyPermanentUpgrades())
-    public void increaseMaxHealth(float amount) {
+    // Für PermanentUpgrade (siehe GDD 3.2/Quest 9, z.B. MaxHealthUpgrade) - erhöht maxHealth UND
+    // heilt sofort auf den neuen Maximalwert (Task #63/Nutzer-Entscheidung: ein PERMANENTER
+    // Hub-Kauf soll immer voll heilen, da er sowohl beim Player-Neuaufbau in startGame() als
+    // auch SOFORT auf die laufende Instanz beim Terminal-Kauf angewendet wird - siehe
+    // UpgradeShopUI/Main.render() - ohne das würde ein Kauf im Hub die Leiste nicht mehr voll
+    // erscheinen lassen, obwohl es dort keine Schadensquelle gibt). Bewusst NICHT dieselbe Methode
+    // für zukünftige IN-RUN-Items/Level-Up-Rewards mit Max-HP-Effekt - die sollen laut Nutzer nur
+    // um den Betrag erhöhen, NICHT voll heilen (sonst wäre ein Max-HP-Item mitten in einem
+    // brenzligen Kampf ein versteckter Voll-Heal) - dafür bei Bedarf eine eigene, separate Methode
+    // ohne den Heil-Effekt anlegen, nicht diese hier mit einem Flag verbiegen.
+    public void increaseMaxHealthAndHeal(float amount) {
         this.maxHealth += amount;
+        this.health = maxHealth;
     }
 
     // Für das Debug-Menü (siehe DebugValue/DebugMenuUI) - geklemmt auf mindestens 1, sonst würde
