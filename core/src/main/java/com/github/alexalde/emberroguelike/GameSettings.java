@@ -13,6 +13,9 @@ public class GameSettings {
 
     public static int dashKey = DefaultSettings.DASH_KEY;
 
+    public static int focusKey = DefaultSettings.FOCUS_KEY;
+    public static boolean showHitboxWhileFocused = DefaultSettings.SHOW_HITBOX_WHILE_FOCUSED;
+
     public static int meleeAttackButton = DefaultSettings.MELEE_ATTACK_BUTTON;
     public static int rangedAttackButton = DefaultSettings.RANGED_ATTACK_BUTTON;
 
@@ -39,6 +42,9 @@ public class GameSettings {
         moveRightKeySecondary = DefaultSettings.MOVE_RIGHT_KEY_SECONDARY;
 
         dashKey = DefaultSettings.DASH_KEY;
+
+        focusKey = DefaultSettings.FOCUS_KEY;
+        showHitboxWhileFocused = DefaultSettings.SHOW_HITBOX_WHILE_FOCUSED;
 
         meleeAttackButton = DefaultSettings.MELEE_ATTACK_BUTTON;
         rangedAttackButton = DefaultSettings.RANGED_ATTACK_BUTTON;

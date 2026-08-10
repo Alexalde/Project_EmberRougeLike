@@ -622,6 +622,16 @@ public class Main extends ApplicationAdapter {
 
         batch.end();
 
+        // Focus-Hitbox-Anzeige (siehe Player.drawFocusHitboxIndicator(), Task #84) - eigener
+        // Durchgang NACH dem SpriteBatch-Weltdurchgang, damit sie über dem Spieler-Sprite liegt,
+        // nicht an DebugSettings.renderHitboxes gekoppelt (echtes Spieler-Feature, kein Debug-Tool)
+        if (player.isFocused() && GameSettings.showHitboxWhileFocused) {
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            player.drawFocusHitboxIndicator(shapeRenderer);
+            shapeRenderer.end();
+        }
+
         // Bildschirmfeste UI (Healthbar) - eigener Zeichen-Durchgang mit uiCamera statt camera,
         // damit sie beim Scrollen der Welt-Kamera an derselben Bildschirmposition bleibt
         batch.setProjectionMatrix(uiCamera.combined);

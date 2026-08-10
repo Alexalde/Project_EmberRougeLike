@@ -88,6 +88,15 @@ public class Player {
     private static final float DASH_COOLDOWN = 0.5f;
     private static final float DASH_SPEED = DASH_DISTANCE / DASH_DURATION;
 
+    // Touhou-artiger "Focus"-Modus (siehe GameSettings.focusKey, Task #84) - gehaltene Taste
+    // verlangsamt die normale Bewegung fürs präzise Ausweichen, wirkt bewusst NICHT auf den Dash
+    // (der ist bereits ein bewusster, kurzer Geschwindigkeits-Ausbruch mit eigener Mechanik).
+    // Grober erster Wert, kein finales Balancing.
+    private static final float FOCUS_SPEED_MULTIPLIER = 0.5f;
+    // Aktueller Zustand der Taste, auch losgelöst von Bewegung relevant (siehe
+    // drawFocusHitboxIndicator() - soll auch im Stehen sichtbar sein, solange gehalten)
+    private boolean focused;
+
     private Sword sword;
     // Bow testweise auf der rechten Maustaste - echtes Waffen-Slot-System (Wechsel zwischen
     // Waffen) kommt erst später, siehe GDD 2 / ROADMAP Quest 3
@@ -184,7 +193,9 @@ public class Player {
         bow.update(deltaTime, targets, stats);
 
         if (state == PlayerState.DASHING) {
-            // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen
+            // Während des Dashs: nur mit der eingefrorenen Richtung bewegen, kein Input lesen.
+            // Focus wirkt bewusst NICHT auf den Dash (siehe FOCUS_SPEED_MULTIPLIER-Kommentar)
+            focused = false;
             moveWithCollision(dashDirection.x * DASH_SPEED * deltaTime, dashDirection.y * DASH_SPEED * deltaTime, room);
 
             dashTimeRemaining -= deltaTime;
@@ -193,6 +204,10 @@ public class Player {
                 dashCooldownRemaining = DASH_COOLDOWN;
             }
         } else {
+            // Auch ohne Bewegungs-Input relevant (siehe drawFocusHitboxIndicator()) - deshalb
+            // hier oben berechnet, nicht erst nach dem Richtungs-Check unten
+            focused = Gdx.input.isKeyPressed(GameSettings.focusKey);
+
             // Jeden Frame die Richtung zurücksetzen
             direction.set(0, 0);
 
@@ -217,7 +232,8 @@ public class Player {
             }
 
             // Bewegung auf die Position anrechnen (mit Terrain-Kollision, siehe moveWithCollision())
-            moveWithCollision(direction.x * speed * deltaTime, direction.y * speed * deltaTime, room);
+            float effectiveSpeed = focused ? speed * FOCUS_SPEED_MULTIPLIER : speed;
+            moveWithCollision(direction.x * effectiveSpeed * deltaTime, direction.y * effectiveSpeed * deltaTime, room);
 
             // Cooldown läuft nur ab, während wir NICHT dashen - skaliert mit cooldownReduction
             // (siehe GDD 2.1, wirkt NUR auf den Dash, nicht auf Waffen-Cooldowns), 0 = unverändert
@@ -584,6 +600,10 @@ public class Player {
         return HURTBOX_RADIUS;
     }
 
+    public boolean isFocused() {
+        return focused;
+    }
+
     public void drawHitboxDebug(ShapeRenderer shapeRenderer) {
         sword.drawHitboxDebug(shapeRenderer, getCenter());
         bow.drawHitboxDebug(shapeRenderer);
@@ -595,6 +615,19 @@ public class Player {
     public void drawHurtboxDebug(ShapeRenderer shapeRenderer) {
         Vector2 center = getCenter();
         shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.circle(center.x, center.y, HURTBOX_RADIUS);
+    }
+
+    // Touhou-artige Hitbox-Anzeige (siehe GameSettings.focusKey/showHitboxWhileFocused, Task
+    // #84) - anders als drawHurtboxDebug() KEIN Debug-Werkzeug, sondern ein echtes, für den
+    // Spieler gedachtes Feature (nur gezeigt, solange Focus gehalten wird), deshalb auch eine
+    // GEFÜLLTE Form statt einer Kontur - erwartet ein laufendes
+    // ShapeRenderer.begin(ShapeType.Filled), NICHT an DebugSettings.renderHitboxes gekoppelt.
+    // Reiner ShapeRenderer-Platzhalter (siehe Klassenkommentar) - später gerne mit einer echten
+    // Sprite/VFX hinterlegt statt eines reinen Kreises.
+    public void drawFocusHitboxIndicator(ShapeRenderer shapeRenderer) {
+        Vector2 center = getCenter();
+        shapeRenderer.setColor(Color.RED);
         shapeRenderer.circle(center.x, center.y, HURTBOX_RADIUS);
     }
 
