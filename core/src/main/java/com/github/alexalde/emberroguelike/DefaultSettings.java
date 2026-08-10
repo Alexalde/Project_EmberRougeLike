@@ -16,6 +16,14 @@ public class DefaultSettings {
 
     public static final int DASH_KEY = Input.Keys.SPACE;
 
+    // Touhou-artiger "Focus"-Modus (siehe GDD 6/Quest 10, Task #84) - gehalten statt gedrückt,
+    // verlangsamt die Bewegung fürs präzise Ausweichen in engen Bullet-Hell-Passagen
+    public static final int FOCUS_KEY = Input.Keys.SHIFT_LEFT;
+    // Spieler-Setting, kein Debug-Setting (siehe DebugSettings vs. GameSettings-Konvention) -
+    // aktuell nur als Default wirksam, echtes Umschalten kommt erst mit dem Options-/Pause-Menü
+    // (Task #62), gleiches Prinzip wie AUTO_SWING heute schon
+    public static final boolean SHOW_HITBOX_WHILE_FOCUSED = true;
+
     public static final int MELEE_ATTACK_BUTTON = Input.Buttons.LEFT;
     public static final int RANGED_ATTACK_BUTTON = Input.Buttons.RIGHT;
 
