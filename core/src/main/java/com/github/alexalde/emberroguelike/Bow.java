@@ -72,10 +72,16 @@ public class Bow implements Weapon {
         float finalDamage = stats.computeDamage(damage, DamageType.PHYSICAL);
         int totalProjectiles = 1 + stats.projectileCount;
 
+        // Multiplikator auf die Fluggeschwindigkeit (siehe GDD 2.1/Task #54), 1 = unverändert
+        float finalProjectileSpeed = projectileSpeed * stats.projectileSpeedMultiplier;
+
         for (int i = 0; i < totalProjectiles; i++) {
             Vector2 projectileDirection = spreadDirection(direction, i, totalProjectiles);
             activeProjectiles.add(
-                new Projectile(origin, projectileDirection, projectileSpeed, finalDamage, maxRange, hitsPerProjectile, projectileHitboxRadius, projectileTexture)
+                new Projectile(
+                    origin, projectileDirection, finalProjectileSpeed, finalDamage, maxRange,
+                    hitsPerProjectile, projectileHitboxRadius, projectileTexture, stats.bounceCount
+                )
             );
         }
     }

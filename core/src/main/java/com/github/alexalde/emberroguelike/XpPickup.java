@@ -18,7 +18,8 @@ public class XpPickup extends Pickup {
 
     @Override
     protected void applyEffect(Player player) {
-        player.addXp(xpValue);
+        // Multiplikator auf JEDE eingesammelte XP-Menge (siehe GDD 2.1/Task #54), 1 = unverändert
+        player.addXp(xpValue * player.getStats().xpMultiplier);
     }
 
     @Override

@@ -267,6 +267,17 @@ public class Main extends ApplicationAdapter {
             v -> player.getStats().projectileCount = Math.round(v), 1f, "%.0f"
         ));
         values.add(new DebugValue(
+            "ProjSpeed-Multiplikator", () -> player.getStats().projectileSpeedMultiplier,
+            v -> player.getStats().projectileSpeedMultiplier = v, 0.1f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "XP-Multiplikator", () -> player.getStats().xpMultiplier, v -> player.getStats().xpMultiplier = v, 0.1f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "Bounce-Count", () -> (float) player.getStats().bounceCount,
+            v -> player.getStats().bounceCount = Math.round(v), 1f, "%.0f"
+        ));
+        values.add(new DebugValue(
             "Upgrade-Waehrung", () -> metaProgress.upgradeCurrency, v -> metaProgress.upgradeCurrency = v, 5f, "%.0f"
         ));
         values.add(new DebugValue(
