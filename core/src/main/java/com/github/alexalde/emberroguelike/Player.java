@@ -115,6 +115,14 @@ public class Player {
     private float currentXp;
     private float xpToNextLevel;
 
+    // Run-lokale Dritt-Währung (siehe RunCurrencyPickup) - bewusst NICHT Teil von MetaProgress/
+    // MetaCurrencyType, das ist explizit die PERSISTENTE Schicht. Gleicher Lebenszyklus wie XP:
+    // lebt nur innerhalb eines Runs, wird bei jedem Player-Neuaufbau (Tod -> startGame()) auf 0
+    // zurückgesetzt. Gedacht für spätere In-Run-Shops/Rerolls/Events (siehe ROADMAP-Backlog) -
+    // Name bewusst nach ROLLE benannt ("Run"), nicht nach einer noch nicht feststehenden Flavor-
+    // Bezeichnung wie "Gold", gleiches Prinzip wie MetaCurrencyType.UPGRADE/UNLOCK.
+    private float runCurrency;
+
     // Persistenter, Run-übergreifender Charakterbogen (siehe GDD 3.2/Quest 9) - Player hält nur
     // eine REFERENZ (Main besitzt/lädt/speichert die eigentliche Instanz), damit sie einen
     // Player-Neuaufbau in startGame() übersteht.
@@ -132,6 +140,7 @@ public class Player {
         this.level = 1;
         this.currentXp = 0f;
         this.xpToNextLevel = 100f;
+        this.runCurrency = 0f;
         this.metaProgress = metaProgress;
 
         this.playerSpriteSheet = new AsepriteSpriteSheet("player_spritesheet.png", "player_spritesheet.json");
@@ -442,6 +451,23 @@ public class Player {
         }
 
         return levelUps;
+    }
+
+    public float getRunCurrency() {
+        return runCurrency;
+    }
+
+    // Reiner Akkumulator, gleiches Prinzip wie addXp() - runCurrencyMultiplier wird bewusst NICHT
+    // hier, sondern am Aufruf-Ort angewendet (siehe RunCurrencyPickup.applyEffect()), exakt wie
+    // xpMultiplier bei XpPickup.applyEffect() schon gehandhabt wird
+    public void addRunCurrency(float amount) {
+        runCurrency += amount;
+    }
+
+    // Für das Debug-Menü (siehe DebugValue/DebugMenuUI) - direktes Setzen statt nur Addieren,
+    // gleiches Prinzip wie setHealth()
+    public void setRunCurrency(float runCurrency) {
+        this.runCurrency = Math.max(0f, runCurrency);
     }
 
     public Vector2 getCenter() {
