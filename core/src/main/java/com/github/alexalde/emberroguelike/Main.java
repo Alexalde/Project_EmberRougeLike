@@ -459,9 +459,18 @@ public class Main extends ApplicationAdapter {
             for (Enemy enemy : enemies) {
                 enemy.update(deltaTime, player, room);
             }
+
+            // Position des zuletzt entfernten Gegners/Boss in DIESEM Frame (siehe Raum-Clear-
+            // Belohnung unten, Task #53) - null bleibt es nur, wenn in diesem Frame niemand
+            // entfernt wurde. Das Raum-Clear-Gate weiter unten feuert aber garantiert nur in
+            // genau dem Frame, in dem der/die letzte Entfernung passiert (siehe dortiger
+            // Kommentar), der Fallback auf player.getCenter() ist also nur zur Sicherheit da.
+            Vector2 lastHostileDeathPosition = null;
+
             if (boss != null) {
                 boss.update(deltaTime, player, room);
                 if (boss.isRemovable()) {
+                    lastHostileDeathPosition = boss.getCenter();
                     pickups.add(new XpPickup(boss.getCenter(), boss.getXpValue()));
                     // GARANTIERT statt der 30%-Chance bei normalen Gegnern (siehe GDD 6/Quest 10) -
                     // ein Boss-Kill soll nie "leer ausgehen"
@@ -480,6 +489,7 @@ public class Main extends ApplicationAdapter {
             // Pickup-Schleife unten).
             for (Enemy enemy : enemies) {
                 if (enemy.isRemovable()) {
+                    lastHostileDeathPosition = enemy.getCenter();
                     pickups.add(new XpPickup(enemy.getCenter(), enemy.getXpValue()));
                     // Kleine Chance auf zusätzliche Upgrade-Währung (siehe GDD 3.2/Quest 9) -
                     // erster grober Wurf, kein finales Balancing
@@ -506,6 +516,10 @@ public class Main extends ApplicationAdapter {
                     pickup.collect(player);
                     if (pickup instanceof CurrencyPickup) {
                         currencyCollected = true;
+                    } else if (pickup instanceof RewardPickup) {
+                        // Item-Auswahlrunde startet erst jetzt, beim EINSAMMELN (Task #53) -
+                        // RewardPickup selbst hat keinen Zugriff auf itemPool (Main-Zustand)
+                        pendingRewardBatches.add(itemPool.pickRandom(((RewardPickup) pickup).getItemCount()));
                     }
                 }
             }
@@ -565,18 +579,22 @@ public class Main extends ApplicationAdapter {
                 }
             }
 
-            // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8) - genau einmal pro Raumbesuch, nur für
-            // Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty() statt !anyHostileAlive
-            // (anders als beim Tür-Lock oben): so löst die Belohnung erst aus, wenn der letzte
-            // Gegner komplett entfernt ist (Sterbeanimation fertig, siehe Enemy.isRemovable()),
-            // nicht schon im selben Frame, in dem er den tödlichen Treffer kassiert. Langfristig
-            // soll das ohnehin durch einen Beute-Drop des letzten Gegners ersetzt werden (siehe
-            // ROADMAP) statt eines Auto-Triggers. "boss == null" wartet analog auf dessen
-            // Sterbeanimations-Grace-Window (siehe Boss.isRemovable()/Boss-Entfernungs-Block oben).
+            // Raum-Clear-Belohnung (siehe GDD 3.1/Quest 8, Task #53) - genau einmal pro
+            // Raumbesuch, nur für Räume, die überhaupt Gegner hatten. Bewusst enemies.isEmpty()
+            // statt !anyHostileAlive (anders als beim Tür-Lock oben): so löst die Belohnung erst
+            // aus, wenn der letzte Gegner komplett entfernt ist (Sterbeanimation fertig, siehe
+            // Enemy.isRemovable()), nicht schon im selben Frame, in dem er den tödlichen Treffer
+            // kassiert. "boss == null" wartet analog auf dessen Sterbeanimations-Grace-Window
+            // (siehe Boss.isRemovable()/Boss-Entfernungs-Block oben). Seit Task #53 ein echter
+            // Boden-Drop an der Position des zuletzt entfernten Gegners/Boss statt eines
+            // automatischen Popups - der Spieler muss ihn erst einsammeln (siehe RewardPickup/
+            // Pickup-Schleife oben).
             if (roomHadEnemies && enemies.isEmpty() && boss == null && !roomRewardGranted) {
                 roomRewardGranted = true;
                 clearedRoomPaths.add(room.getTmxPath());
-                pendingRewardBatches.add(itemPool.pickRandom(3));
+
+                Vector2 dropPosition = lastHostileDeathPosition != null ? lastHostileDeathPosition : player.getCenter();
+                pickups.add(new RewardPickup(dropPosition, 3));
                 // Boss-Räume bekommen eine spürbar größere Belohnung (siehe GDD 6/Quest 10):
                 // größere Unlock-Währung statt der normalen Menge, PLUS eine zweite
                 // Item-Auswahlrunde - reine Wiederverwendung bestehender Mechanik, kein neuer
@@ -584,12 +602,11 @@ public class Main extends ApplicationAdapter {
                 // null ist (siehe Boss-Entfernungs-Block).
                 float unlockAmount = roomHadBoss ? BOSS_UNLOCK_CURRENCY_AMOUNT : UNLOCK_CURRENCY_DROP_AMOUNT;
                 if (roomHadBoss) {
-                    pendingRewardBatches.add(itemPool.pickRandom(3));
+                    pickups.add(new RewardPickup(dropPosition, 3));
                 }
                 // Zusätzlich Unlock-Währung, an den Meilenstein "Raum geschafft" gekoppelt (siehe
-                // GDD 3.1 "Freischaltungen über Meilensteine") - dropt an der Spielerposition, da
-                // es keinen "letzten Gegner" als Ursprung mehr gibt
-                pickups.add(new CurrencyPickup(player.getCenter(), MetaCurrencyType.UNLOCK, unlockAmount));
+                // GDD 3.1 "Freischaltungen über Meilensteine")
+                pickups.add(new CurrencyPickup(dropPosition, MetaCurrencyType.UNLOCK, unlockAmount));
             }
 
             if (!player.isAlive()) {
