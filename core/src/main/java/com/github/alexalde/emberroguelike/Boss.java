@@ -193,6 +193,17 @@ public class Boss implements Damageable {
         return xpValue;
     }
 
+    // Für BossHealthbarUI (Task #89) - die Leiste ist bewusst NICHT Teil von Boss selbst, siehe
+    // dortiger Klassenkommentar (bildschirmfestes UI-Element statt Welt-Rendering, muss auch
+    // mehrere gleichzeitige Bosse nebeneinander darstellen können)
+    public float getHealth() {
+        return health;
+    }
+
+    public float getMaxHealth() {
+        return maxHealth;
+    }
+
     @Override
     public Vector2 getCenter() {
         return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
