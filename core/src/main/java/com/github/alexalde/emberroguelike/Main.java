@@ -594,6 +594,7 @@ public class Main extends ApplicationAdapter {
                 clearedRoomPaths.add(room.getTmxPath());
 
                 Vector2 dropPosition = lastHostileDeathPosition != null ? lastHostileDeathPosition : player.getCenter();
+                System.out.println("DEBUG Raum-Clear-Drop: dropPosition=" + dropPosition + " playerCenter=" + player.getCenter() + " lastHostileDeathPosition=" + lastHostileDeathPosition);
                 pickups.add(new RewardPickup(dropPosition, 3));
                 // Boss-Räume bekommen eine spürbar größere Belohnung (siehe GDD 6/Quest 10):
                 // größere Unlock-Währung statt der normalen Menge, PLUS eine zweite
