@@ -36,13 +36,6 @@ public class Boss implements Damageable {
     private static final int SPRITE_HEIGHT = 64;
     private static final float HURTBOX_RADIUS = 32f;
 
-    // Boss-Healthbar (Task #89) - schwebt über dem Körper, folgt der Boss-Position wie alles
-    // andere über die Welt-Kamera (kein eigener UI-Durchgang nötig, anders als Player.Healthbar).
-    // Reiner ShapeRenderer-Platzhalter (zwei Rechtecke), passend zum Rest des Boss-Platzhalters.
-    private static final float HEALTHBAR_WIDTH = 56f;
-    private static final float HEALTHBAR_HEIGHT = 6f;
-    private static final float HEALTHBAR_OFFSET_Y = 12f;
-
     // Immer die volle Sprite-Fläche - anders als Player/Enemy gibt es noch kein Spritesheet mit
     // einem "Hitbox"-Tag, das einen kleineren Ausschnitt liefern könnte (siehe Klassenkommentar)
     private final Rectangle hitboxBounds = new Rectangle(0, 0, SPRITE_WIDTH, SPRITE_HEIGHT);
@@ -200,6 +193,17 @@ public class Boss implements Damageable {
         return xpValue;
     }
 
+    // Für BossHealthbarUI (Task #89) - die Leiste ist bewusst NICHT Teil von Boss selbst, siehe
+    // dortiger Klassenkommentar (bildschirmfestes UI-Element statt Welt-Rendering, muss auch
+    // mehrere gleichzeitige Bosse nebeneinander darstellen können)
+    public float getHealth() {
+        return health;
+    }
+
+    public float getMaxHealth() {
+        return maxHealth;
+    }
+
     @Override
     public Vector2 getCenter() {
         return new Vector2(position.x + SPRITE_WIDTH / 2f, position.y + SPRITE_HEIGHT / 2f);
@@ -231,22 +235,6 @@ public class Boss implements Damageable {
             shapeRenderer.setColor(phase == BossPhase.PHASE_TWO ? Color.RED : Color.MAROON);
         }
         shapeRenderer.circle(center.x, center.y, SPRITE_WIDTH / 2f);
-
-        drawHealthbar(shapeRenderer, center);
-    }
-
-    // Hintergrund (dunkel) + Füllung (rot, Anteil = health/maxHealth) - zeigt auch während der
-    // Sterbeanimation noch den (leeren) Zustand, solange Boss.draw() überhaupt aufgerufen wird
-    private void drawHealthbar(ShapeRenderer shapeRenderer, Vector2 center) {
-        float healthPercent = MathUtils.clamp(health / maxHealth, 0f, 1f);
-        float barX = center.x - HEALTHBAR_WIDTH / 2f;
-        float barY = center.y + SPRITE_HEIGHT / 2f + HEALTHBAR_OFFSET_Y;
-
-        shapeRenderer.setColor(Color.DARK_GRAY);
-        shapeRenderer.rect(barX, barY, HEALTHBAR_WIDTH, HEALTHBAR_HEIGHT);
-
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(barX, barY, HEALTHBAR_WIDTH * healthPercent, HEALTHBAR_HEIGHT);
     }
 
     // Gleiche GRÜN/GELB-Konvention wie bei Enemy - erwartet ein laufendes

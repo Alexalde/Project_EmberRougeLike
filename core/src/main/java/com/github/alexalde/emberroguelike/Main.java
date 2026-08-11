@@ -32,6 +32,9 @@ public class Main extends ApplicationAdapter {
     // an derselben Bildschirmposition bleiben
     private OrthographicCamera uiCamera;
     private Healthbar healthbar;
+    // Bildschirmfest verankerte Boss-Healthbar(s) (siehe Task #89) - unten zentriert, gleicher
+    // uiCamera-Ansatz wie healthbar oben
+    private BossHealthbarUI bossHealthbarUI;
     // Eingebaute Standard-Schrift (kein eigenes Font-Asset nötig) - ursprünglich nur für die
     // Sidequest-1.4-Debug-Anzeige gedacht, wird jetzt auch von RewardChoiceUI genutzt (daher kein
     // "debug"-Name mehr). Spätere eigene Pixel-Font siehe ROADMAP-Backlog.
@@ -127,6 +130,7 @@ public class Main extends ApplicationAdapter {
         uiCamera.setToOrtho(false, GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
         uiCamera.update();
         healthbar = new Healthbar();
+        bossHealthbarUI = new BossHealthbarUI();
         uiFont = new BitmapFont();
         itemPool = new ItemPool();
         pendingRewardBatches = new LinkedList<>();
@@ -689,6 +693,16 @@ public class Main extends ApplicationAdapter {
             player.drawFocusHitboxIndicator(shapeRenderer);
             shapeRenderer.end();
         }
+
+        // Boss-Healthbar (siehe BossHealthbarUI, Task #89) - eigener ShapeRenderer-Durchgang mit
+        // uiCamera VOR dem SpriteBatch-UI-Durchgang unten (beide APIs lassen sich nicht im
+        // selben begin()/end() mischen). "boss != null ? List.of(boss) : List.of()" statt eines
+        // eigenen Main-Felds für mehrere Bosse - Main verwaltet aktuell ohnehin nur einen
+        // gleichzeitigen Boss, BossHealthbarUI selbst ist aber schon listenbasiert (siehe dort)
+        shapeRenderer.setProjectionMatrix(uiCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        bossHealthbarUI.draw(shapeRenderer, boss != null ? List.of(boss) : List.of());
+        shapeRenderer.end();
 
         // Bildschirmfeste UI (Healthbar) - eigener Zeichen-Durchgang mit uiCamera statt camera,
         // damit sie beim Scrollen der Welt-Kamera an derselben Bildschirmposition bleibt
