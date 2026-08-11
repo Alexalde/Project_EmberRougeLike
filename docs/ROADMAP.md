@@ -117,9 +117,9 @@ Meta-Progression zwischen Runs: permanente Währung + Hub-Menü für dauerhafte 
 - Gefundener Bug beim ersten Test: `RunEntrance` war anfangs nur eine unsichtbare `Vector2`-Trigger-Zone ohne eigene Grafik (anders als `Door`/`Terminal`) - zu einer vollwertigen Klasse mit Platzhalter-Textur (orange eingefärbt) aufgewertet.
 - Debug-Stats (siehe Sidequest 1.4) zeigen jetzt zusätzlich den aktuellen Stand beider Währungen an - ohne sichtbaren Zähler war beim Testen nicht überprüfbar, ob Sammeln/Speichern tatsächlich funktioniert.
 
-**Backlog (gefunden beim Testen von Quest 9.6, bewusst zurückgestellt): Aktuelle HP nach Hub-Kauf.** `MaxHealthUpgrade.apply()` erhöht aktuell nur `maxHealth`, nicht die aktuelle `health` - im Hub bleibt die aktuelle HP nach einem Kauf unverändert, sie wird erst beim nächsten `Player`-Konstruktor-Aufruf (Run-Start) auf den neuen `maxHealth`-Wert gesetzt. Zu klären: soll ein Hub-Kauf die aktuelle HP sofort mitanheben, oder ist "wirkt erst ab dem nächsten Run" das gewollte Verhalten?
+**✅ Gelöst (Task #63, 2026-08-10): Aktuelle HP nach Hub-Kauf.** `Player.increaseMaxHealthAndHeal()` (umbenannt von `increaseMaxHealth()`) erhöht `maxHealth` UND heilt sofort auf den neuen Wert - Nutzer-Entscheidung: gilt NUR für permanente Hub-Käufe, ein zukünftiges In-Run-Item mit Max-HP-Effekt soll NICHT voll heilen (siehe Memory `max-hp-healing-convention`).
 
-**Backlog (vermerkt während der Planung, bewusst NICHT Teil von Quest 9): Pause-Menü mit "Run aufgeben".** Einziger geplanter manueller Ausstieg aus einem laufenden Run (neben Tod) - soll sich exakt wie ein Tod verhalten (zurück in den Hub). Aktuell nicht umgesetzt, da kein Pause-Menü existiert.
+**✅ Gelöst (Task #62, 2026-08-10): Pause-Menü mit "Run aufgeben".** `PauseMenuUI` (Escape zum Öffnen/Schließen) - "Fortsetzen" oder "Run aufgeben" (ruft `startGame()` auf, identischer Reset-Weg wie beim Tod). Bewusst nach demselben Bauplan wie `DebugMenuUI`/`UpgradeShopUI` (Logik getrennt von reiner Platzhalter-Optik, später leicht durch echte Sprites ersetzbar).
 
 **Backlog (vermerkt während der Planung, bewusst NICHT Teil von Quest 9): Run-interne, nicht-persistente Dritt-Währung.** Idee für spätere In-Run-Shops (z.B. Gold, das mit dem Run endet) - eigenständiges späteres Thema, unabhängig von den beiden Meta-Währungen hier.
 
@@ -151,12 +151,12 @@ Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen. **Abgeschlossen 2026-08-06
 - **`Room.java`:** neuer `"BossSpawn"`-Objekttyp (nullable `Vector2`, analog `playerSpawn`) + `getBossSpawn()`.
 - **`Main.java`-Integration:** Debug-Taste `F2` (`GameSettings.bossDebugSpawnKey`) spawnt einen Boss ohne Tiled-Änderung - bleibt dauerhaft bestehen (gleicher Geist wie das `F1`-Debug-Menü aus Sidequest 2). `enterRoom()` spawnt/entfernt den Boss über `Room.getBossSpawn()`, respektiert `clearedRoomPaths` genau wie Gegner. `anyEnemyAlive` zu `anyHostileAlive` umbenannt (ein Boss ist kein `Enemy`, aber genauso feindlich). Boss-Räume bekommen eine deutlich größere Belohnung (garantierter Bonus-Drop, größere Unlock-Währung, zusätzliche Item-Auswahlrunde).
 - **Bewusst zurückgestellt (Backlog):**
-  - Mehrere Angriffe gleichzeitig aktiv (Layering, z.B. Raum-Beam läuft während Projektile fliegen) - `Boss` hält aktuell genau EIN `activeAttack`-Feld, kein `List<BossAttack>`. Nutzer-Bestätigung: das soll definitiv kommen, nur nicht in dieser Quest.
-  - Pity-Counter-Gewichtung in `BossAttackPool` (Gewicht eines Musters steigt seit der letzten Auswahl schrittweise, statt reiner Gleichverteilung) - verhindert lange Wiederholungs-Dürren, bleibt aber im Kern zufällig.
-  - Zentrale, deutlich kleinere Spieler-Hit-Hitbox für Boss-Angriffe (aktuell `PLAYER_HIT_RADIUS=20f` in 3 Dateien dupliziert, mit Durchmesser 40 bei `SPRITE_WIDTH=48` viel zu groß für echtes Bullet-Hell-"Grasen" im Touhou-Stil).
-  - Boss-Angriffstelegraph (Größe/Form) soll später nochmal überarbeitet werden, sobald man sich gezielt mit dem Visuellen befasst.
-  - Keine Boss-Healthbar - Rückmeldung über Treffer aktuell nur über den kurzen weißen Flash.
-  - Kein echtes `BossSpawn`-Tiled-Objekt in einem Raum platziert - der Nutzer kann das jederzeit selbst nachholen, `F2` deckt das Testen bis dahin ab.
+  - ✅ Gelöst (Task #81): Mehrere Angriffe gleichzeitig aktiv (Layering) - `Boss` hält jetzt `Map<AttackCategory, BossAttack>` statt eines einzelnen `activeAttack`-Felds, ein Slot pro Kategorie (SLAM/BEAM/PROJECTILE) mit unabhängigem Cooldown.
+  - ✅ Gelöst (Task #82): Pity-Counter-Gewichtung in `BossAttackPool`, phasen-getrennt mit unabhängigem Gewichts-Zustand pro Phase.
+  - ✅ Gelöst (Task #83, dann #85 vereinheitlicht): Zentrale Spieler-Hit-Hitbox (`Player.HURTBOX_RADIUS`, deutlich kleiner als vorher), inzwischen Teil der allgemeinen `Shape`-Abstraktion für sämtliche Trefferlogik im Spiel.
+  - ✅ Gelöst (Task #77): Boss-Angriffstelegraph überarbeitet - volle Fläche sofort sichtbar, Füllung von innen/einer Seite zeigt Windup-Fortschritt statt wachsender Größe; kurzer weißer Impact-Blitz nach dem Windup bei Melee/AOE.
+  - Weiterhin offen: **Keine Boss-Healthbar** - Rückmeldung über Treffer aktuell nur über den kurzen weißen Flash.
+  - Weiterhin offen: **Kein echtes `BossSpawn`-Tiled-Objekt** in einem Raum platziert - der Nutzer kann das jederzeit selbst nachholen, `F2` deckt das Testen bis dahin ab.
 
 ## ⬜ Quest 11: Das Chaos ordnet sich (Prozedurale Generierung)
 Erste Version der prozeduralen Raumkombination, aufbauend auf dem Pool handgebauter Räume aus Quest 4–6 (Ansatz wird dann final entschieden, siehe GDD 4).
