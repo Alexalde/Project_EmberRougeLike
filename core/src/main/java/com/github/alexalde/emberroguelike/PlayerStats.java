@@ -37,6 +37,9 @@ public class PlayerStats {
     public float projectileSpeedMultiplier = 1f;
     // Multiplikator auf JEDE eingesammelte XP-Menge (siehe XpPickup) - 1 = unverändert
     public float xpMultiplier = 1f;
+    // Multiplikator auf JEDE eingesammelte RunCurrency-Menge (siehe RunCurrencyPickup,
+    // Player.addRunCurrency()), gleiches Prinzip wie xpMultiplier - 1 = unverändert
+    public float runCurrencyMultiplier = 1f;
     // Zusätzliche Abprall-/Ricochet-Ladungen für Projektile, die diese Eigenschaft haben (über
     // Items ODER spezifische Waffen, siehe ROADMAP-Backlog) - 0 = kein Abprall
     public int bounceCount = 0;

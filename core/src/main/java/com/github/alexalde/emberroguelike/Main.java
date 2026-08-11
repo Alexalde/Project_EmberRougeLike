@@ -92,11 +92,18 @@ public class Main extends ApplicationAdapter {
     private static final float UPGRADE_CURRENCY_DROP_AMOUNT = 5f;
     private static final float UNLOCK_CURRENCY_DROP_AMOUNT = 10f;
 
+    // Run-lokale Dritt-Währung (siehe RunCurrencyPickup, Task #90) - gleiches Drop-Tuning-Prinzip
+    // wie die Upgrade-Währung (häufig, kleine Menge pro Gegner-Tod), aber ein eigener, unabhängiger
+    // Wert, da diese Währung NICHT persistiert (siehe Player.runCurrency)
+    private static final float RUN_CURRENCY_DROP_CHANCE = 0.3f;
+    private static final float RUN_CURRENCY_DROP_AMOUNT = 5f;
+
     // Boss-Belohnung (siehe GDD 6/Quest 10) - deutlich über normalen Beträgen, GARANTIERT statt
     // einer Chance (ein Boss-Kill soll nie "leer ausgehen"). Grobe erste Werte, kein finales
     // Balancing.
     private static final float BOSS_UPGRADE_CURRENCY_AMOUNT = 50f;
     private static final float BOSS_UNLOCK_CURRENCY_AMOUNT = 30f;
+    private static final float BOSS_RUN_CURRENCY_AMOUNT = 50f;
 
     // Debug-Menü (siehe DebugValue/DebugMenuUI) - debugValues wird EINMALIG in create() gebaut,
     // die Lambdas greifen über die Instanzfelder "player"/"metaProgress" zu, bleiben also auch
@@ -276,6 +283,13 @@ public class Main extends ApplicationAdapter {
         values.add(new DebugValue(
             "Bounce-Count", () -> (float) player.getStats().bounceCount,
             v -> player.getStats().bounceCount = Math.round(v), 1f, "%.0f"
+        ));
+        values.add(new DebugValue(
+            "RunCurrency-Multiplikator", () -> player.getStats().runCurrencyMultiplier,
+            v -> player.getStats().runCurrencyMultiplier = v, 0.1f, "%.2f"
+        ));
+        values.add(new DebugValue(
+            "RunCurrency", player::getRunCurrency, player::setRunCurrency, 5f, "%.0f"
         ));
         values.add(new DebugValue(
             "Upgrade-Waehrung", () -> metaProgress.upgradeCurrency, v -> metaProgress.upgradeCurrency = v, 5f, "%.0f"
@@ -486,6 +500,7 @@ public class Main extends ApplicationAdapter {
                     // GARANTIERT statt der 30%-Chance bei normalen Gegnern (siehe GDD 6/Quest 10) -
                     // ein Boss-Kill soll nie "leer ausgehen"
                     pickups.add(new CurrencyPickup(boss.getCenter(), MetaCurrencyType.UPGRADE, BOSS_UPGRADE_CURRENCY_AMOUNT));
+                    pickups.add(new RunCurrencyPickup(boss.getCenter(), BOSS_RUN_CURRENCY_AMOUNT));
                     boss.dispose();
                     boss = null;
                 }
@@ -506,6 +521,12 @@ public class Main extends ApplicationAdapter {
                     // erster grober Wurf, kein finales Balancing
                     if (MathUtils.random() < UPGRADE_CURRENCY_DROP_CHANCE) {
                         pickups.add(new CurrencyPickup(enemy.getCenter(), MetaCurrencyType.UPGRADE, UPGRADE_CURRENCY_DROP_AMOUNT));
+                    }
+                    // Run-lokale Dritt-Währung (siehe RunCurrencyPickup, Task #90) - erstmal nur
+                    // Gegner-Drops, spätere Quellen (zerstörbare Objekte, Glücksspielautomat)
+                    // laut Nutzer noch offen
+                    if (MathUtils.random() < RUN_CURRENCY_DROP_CHANCE) {
+                        pickups.add(new RunCurrencyPickup(enemy.getCenter(), RUN_CURRENCY_DROP_AMOUNT));
                     }
                     enemy.dispose();
                 }
@@ -706,12 +727,13 @@ public class Main extends ApplicationAdapter {
                     + "Level %d (%.0f/%.0f XP)\n"
                     + "Dmg x%.2f  AtkSpd x%.2f  CDR %.0f%%\n"
                     + "Crit %.0f%% (x%.2f)  Proj +%d\n"
-                    + "Upgrade-Waehrung: %.0f  Unlock-Waehrung: %.0f",
+                    + "Upgrade-Waehrung: %.0f  Unlock-Waehrung: %.0f  RunCurrency: %.0f",
                 player.getHealth(), player.getMaxHealth(), player.getSpeed(), Math.max(0f, player.getDashCooldownRemaining()),
                 player.getLevel(), player.getCurrentXp(), player.getXpToNextLevel(),
                 stats.damageMultiplier, stats.attackSpeedMultiplier, stats.cooldownReduction * 100,
                 stats.critChance * 100, stats.critDamageMultiplier, stats.projectileCount,
-                metaProgress.getCurrency(MetaCurrencyType.UPGRADE), metaProgress.getCurrency(MetaCurrencyType.UNLOCK)
+                metaProgress.getCurrency(MetaCurrencyType.UPGRADE), metaProgress.getCurrency(MetaCurrencyType.UNLOCK),
+                player.getRunCurrency()
             );
             // Startet knapp unterhalb der Healthbar (die bei y=320..352 liegt, siehe
             // Healthbar.draw()) mit reichlich Platz nach unten - die feste virtuelle Auflösung
