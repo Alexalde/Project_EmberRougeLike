@@ -155,7 +155,7 @@ Ein Boss-Encounter mit eigenem Angriffsmuster/Phasen. **Abgeschlossen 2026-08-06
   - ✅ Gelöst (Task #82): Pity-Counter-Gewichtung in `BossAttackPool`, phasen-getrennt mit unabhängigem Gewichts-Zustand pro Phase.
   - ✅ Gelöst (Task #83, dann #85 vereinheitlicht): Zentrale Spieler-Hit-Hitbox (`Player.HURTBOX_RADIUS`, deutlich kleiner als vorher), inzwischen Teil der allgemeinen `Shape`-Abstraktion für sämtliche Trefferlogik im Spiel.
   - ✅ Gelöst (Task #77): Boss-Angriffstelegraph überarbeitet - volle Fläche sofort sichtbar, Füllung von innen/einer Seite zeigt Windup-Fortschritt statt wachsender Größe; kurzer weißer Impact-Blitz nach dem Windup bei Melee/AOE.
-  - Weiterhin offen: **Keine Boss-Healthbar** - Rückmeldung über Treffer aktuell nur über den kurzen weißen Flash.
+  - ✅ Gelöst (Task #89, 2026-08-11): Boss-Healthbar - schwebt über dem Boss-Körper (Hintergrund + rote Füllung, Anteil = `health`/`maxHealth`), reiner `ShapeRenderer`-Platzhalter über die Welt-Kamera (kein eigener UI-Durchgang nötig, folgt der Boss-Position automatisch). Bleibt während der Sterbeanimation sichtbar (leer), da `Boss.draw()` weiterhin aufgerufen wird.
   - Weiterhin offen: **Kein echtes `BossSpawn`-Tiled-Objekt** in einem Raum platziert - der Nutzer kann das jederzeit selbst nachholen, `F2` deckt das Testen bis dahin ab.
 
 ## ⬜ Quest 11: Das Chaos ordnet sich (Prozedurale Generierung)
